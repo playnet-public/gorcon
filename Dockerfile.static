@@ -1,0 +1,12 @@
+FROM scratch
+
+LABEL maintainer PlayNet <docker@play-net.org>
+LABEL type "public"
+LABEL versioning "simple"
+
+ARG TOOL
+
+ADD ./build/ /
+COPY files/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+ENTRYPOINT ["./app"]

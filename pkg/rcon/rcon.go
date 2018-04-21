@@ -1,9 +1,10 @@
 package rcon
 
 import (
-	"errors"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Rcon is the wrapper around the rcon connection interface
@@ -70,4 +71,20 @@ func (r *Rcon) Reconnect() error {
 	r.m.Lock()
 	defer r.m.Unlock()
 	return r.Con.Open()
+}
+
+// Disconnect from rcon. This tries to gracefully close the current connection and resets the local Connection internally
+// A failing close will result in an error
+func (r *Rcon) Disconnect() error {
+	if r.Con == nil {
+		return errors.New("connection already nil")
+	}
+	err := r.Con.Close()
+	if err != nil {
+		return errors.Wrap(err, "failed to close current connection")
+	}
+	r.m.Lock()
+	defer r.m.Unlock()
+	r.Con = nil
+	return nil
 }

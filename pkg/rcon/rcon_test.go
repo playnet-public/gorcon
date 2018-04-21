@@ -97,4 +97,29 @@ var _ = Describe("Rcon", func() {
 			Expect(r.Reconnect()).NotTo(BeNil())
 		})
 	})
+
+	Describe("Disconnect", func() {
+		BeforeEach(func() {
+			r.Con = mockConnection
+		})
+		It("returns no error", func() {
+			Expect(r.Disconnect()).To(BeNil())
+		})
+		It("returns error if current connection is nil", func() {
+			r.Con = nil
+			Expect(r.Disconnect()).NotTo(BeNil())
+		})
+		It("calls Con.Close once", func() {
+			r.Disconnect()
+			Expect(mockConnection.CloseCallCount()).To(BeEquivalentTo(1))
+		})
+		It("returns error if Con.Close fails", func() {
+			mockConnection.CloseReturns(errors.New("test"))
+			Expect(r.Disconnect()).NotTo(BeNil())
+		})
+		It("sets the connection to nil after disconnect", func() {
+			r.Disconnect()
+			Expect(r.Con).To(BeNil())
+		})
+	})
 })

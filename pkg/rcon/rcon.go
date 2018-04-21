@@ -45,7 +45,16 @@ func (r *Rcon) Connect() error {
 		return errors.New("client must not be nil")
 	}
 	if r.Con != nil {
-		return errors.New("client already connected")
+		return errors.New("connection already present")
+	}
+	r.Con = r.Client.NewConnection()
+	if r.Con == nil {
+		return errors.New("client returned nil connection")
+	}
+	r.m.Lock()
+	defer r.m.Unlock()
+	return r.Con.Open()
+}
 	}
 	con := r.Client.NewConnection()
 	if con == nil {

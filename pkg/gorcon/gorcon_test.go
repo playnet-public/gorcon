@@ -1,4 +1,4 @@
-package gorcon
+package gorcon_test
 
 import (
 	"testing"

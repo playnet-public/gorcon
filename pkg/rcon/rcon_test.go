@@ -66,4 +66,35 @@ var _ = Describe("Rcon", func() {
 			Expect(r.Connect()).NotTo(BeNil())
 		})
 	})
+
+	Describe("Reconnect", func() {
+		BeforeEach(func() {
+			r.Con = mockConnection
+		})
+		It("returns no error", func() {
+			Expect(r.Reconnect()).To(BeNil())
+		})
+		It("returns error if Client is nil", func() {
+			r.Client = nil
+			Expect(r.Reconnect()).NotTo(BeNil())
+		})
+		It("calls Con.Close once", func() {
+			r.Reconnect()
+			Expect(mockConnection.CloseCallCount()).To(BeEquivalentTo(1))
+		})
+		It("calls Con.Close once before the connection gets overwritten", func() {
+			tempCon := &mocks.RconConnection{}
+			r.Con = tempCon
+			r.Reconnect()
+			Expect(tempCon.CloseCallCount()).To(BeEquivalentTo(1))
+		})
+		It("calls Client.NewConnection once", func() {
+			r.Reconnect()
+			Expect(mockClient.NewConnectionCallCount()).To(BeEquivalentTo(1))
+		})
+		It("returns error if Client returns nil connection", func() {
+			mockClient.NewConnectionReturns(nil)
+			Expect(r.Reconnect()).NotTo(BeNil())
+		})
+	})
 })

@@ -55,13 +55,19 @@ func (r *Rcon) Connect() error {
 	defer r.m.Unlock()
 	return r.Con.Open()
 }
+
+// Reconnect to rcon server. This tries to gracefully close the current connection and then replace it with a new one
+// A failing close will not stop the reconnection process for now
+func (r *Rcon) Reconnect() error {
+	if r.Client == nil {
+		return errors.New("client must not be nil")
 	}
-	con := r.Client.NewConnection()
-	if con == nil {
+	r.Con.Close()
+	r.Con = r.Client.NewConnection()
+	if r.Con == nil {
 		return errors.New("client returned nil connection")
 	}
 	r.m.Lock()
 	defer r.m.Unlock()
-	r.Con = con
 	return r.Con.Open()
 }

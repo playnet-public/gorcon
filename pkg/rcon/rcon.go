@@ -1,3 +1,4 @@
+// Package rcon offers generics for working with rcon connections. Game specific connections reside in their respective sub-packages
 package rcon
 
 import (

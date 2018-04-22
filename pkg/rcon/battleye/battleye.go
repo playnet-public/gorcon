@@ -1,7 +1,9 @@
 package battleye
 
 import (
+	"context"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,7 +18,7 @@ type Client struct {
 
 // NewConnection from the current client's configuration
 func (c *Client) NewConnection() rcon.Connection {
-	return &Connection{}
+	return NewConnection()
 }
 
 // Connection is a BattlEye specific implementation of rcon.Connection offering all required rcon generics
@@ -25,9 +27,29 @@ type Connection struct {
 	Password string
 	Dialer   udpDialer
 
-	UDP UDPConnection
-
+	UDP      UDPConnection
 	Protocol protocol
+
+	KeepAliveTimeout int
+	keepAliveCount   int64
+	seq              uint32
+	pingbackCount    int64
+
+	errors     chan error
+	ctx        context.Context
+	disconnect func()
+}
+
+// NewConnection from the passed in configuration
+func NewConnection() *Connection {
+	c := &Connection{
+		errors: make(chan error),
+	}
+	atomic.StoreUint32(&c.seq, 0)
+	atomic.StoreInt64(&c.keepAliveCount, 0)
+	atomic.StoreInt64(&c.pingbackCount, 0)
+	c.ctx, c.disconnect = context.WithCancel(context.Background())
+	return c
 }
 
 //go:generate counterfeiter -o ../../mocks/udp_dialer.go --fake-name UDPDialer . udpDialer
@@ -83,12 +105,33 @@ func (c *Connection) Open() error {
 	if resp == be.PacketResponse.LoginFail {
 		return errors.New("logging in failed with invalid credentials")
 	}
-
+	c.Hold()
 	return nil
+}
+
+// Hold the connection by sending keepalive packets as required by the battleye protocol
+func (c *Connection) Hold() {
+	go c.WriterLoop()
+}
+
+// WriterLoop for keeping the connection alive
+func (c *Connection) WriterLoop() bool {
+	for {
+		select {
+		case <-c.ctx.Done():
+			return false
+		case <-time.After(time.Second * time.Duration(c.KeepAliveTimeout)):
+			if c.UDP != nil {
+				c.UDP.Write(be.BuildKeepAlivePacket(c.Sequence()))
+				c.AddKeepAlive()
+			}
+		}
+	}
 }
 
 // Close the connection for graceful shutdown or reconnect
 func (c *Connection) Close() error {
+	c.disconnect()
 	if c.UDP == nil {
 		return errors.New("connection must not be nil")
 	}

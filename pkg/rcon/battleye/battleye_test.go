@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/playnet-public/battleye/protocol"
 
@@ -47,10 +48,10 @@ var _ = Describe("Connection", func() {
 	BeforeEach(func() {
 		dial = &mocks.UDPDialer{}
 		proto = &mocks.BattlEyeProtocol{}
-		con = &be.Connection{
-			Dialer:   dial,
-			Protocol: proto,
-		}
+		con = be.NewConnection()
+		con.Dialer = dial
+		con.Protocol = proto
+
 		udp = &mocks.UDPConnection{}
 		dial.DialUDPReturns(udp, nil)
 	})
@@ -120,6 +121,26 @@ var _ = Describe("Connection", func() {
 		It("does return error on invalid login credentials", func() {
 			proto.VerifyLoginReturns(protocol.PacketResponse.LoginFail, nil)
 			Expect(con.Open()).NotTo(BeNil())
+		})
+	})
+	Describe("WriterLoop", func() {
+		BeforeEach(func() {
+			con.UDP = udp
+			con.KeepAliveTimeout = 0
+		})
+		It("does send at least one keepAlive packet", func() {
+			con.Hold()
+			time.Sleep(time.Second * time.Duration(con.KeepAliveTimeout+1))
+			Expect(udp.WriteCallCount()).To(BeNumerically(">", 0))
+		})
+		It("does exit on close", func() {
+			con.KeepAliveTimeout = 100
+			go func() {
+				time.Sleep(time.Millisecond * 5)
+				con.Close()
+			}()
+			Expect(con.WriterLoop()).To(BeEquivalentTo(false))
+
 		})
 	})
 

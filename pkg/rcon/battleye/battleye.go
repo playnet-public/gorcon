@@ -1,6 +1,13 @@
 package battleye
 
-import "github.com/playnet-public/gorcon/pkg/rcon"
+import (
+	"net"
+	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/playnet-public/gorcon/pkg/rcon"
+)
 
 // Client is a BattlEye specific implementation of rcon.Client to create new BattlEye rcon connections
 type Client struct {
@@ -13,10 +20,37 @@ func (c *Client) NewConnection() rcon.Connection {
 
 // Connection is a BattlEye specific implementation of rcon.Connection offering all required rcon generics
 type Connection struct {
+	Addr     *net.UDPAddr
+	Password string
+	Dialer   udpDialer
+
+	UDP UDPConnection
+}
+
+//go:generate counterfeiter -o ../../mocks/udp_dialer.go --fake-name UDPDialer . udpDialer
+type udpDialer interface {
+	DialUDP(string, *net.UDPAddr, *net.UDPAddr) (UDPConnection, error)
+}
+
+// UDPConnection interface defines all udp functions required and is used primarily for mocking
+//go:generate counterfeiter -o ../../mocks/udp_connection.go --fake-name UDPConnection . UDPConnection
+type UDPConnection interface {
+	SetReadDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
 }
 
 // Open the connection
 func (c *Connection) Open() error {
+	if c.UDP != nil {
+		return errors.New("connection already open")
+	}
+	udp, err := c.Dialer.DialUDP("udp", nil, c.Addr)
+	if err != nil {
+		return errors.Wrap(err, "dialing udp failed")
+	}
+	c.UDP = udp
+	c.UDP.SetReadDeadline(time.Now().Add(time.Second * 2)) // TODO: Evaluate if this is required
+	c.UDP.SetWriteDeadline(time.Now().Add(time.Millisecond * 100))
 	return nil
 }
 

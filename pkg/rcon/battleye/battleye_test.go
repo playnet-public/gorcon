@@ -84,8 +84,27 @@ var _ = Describe("Connection", func() {
 	})
 
 	Describe("Close", func() {
+		BeforeEach(func() {
+			con.UDP = udp
+		})
 		It("does not return error", func() {
 			Expect(con.Close()).To(BeNil())
+		})
+		It("does return error if udp connection is nil", func() {
+			con.UDP = nil
+			Expect(con.Close()).NotTo(BeNil())
+		})
+		It("calls close on the udp connection", func() {
+			con.Close()
+			Expect(udp.CloseCallCount()).To(BeEquivalentTo(1))
+		})
+		It("does return error if udp close fails", func() {
+			udp.CloseReturns(errors.New("test"))
+			Expect(con.Close()).NotTo(BeNil())
+		})
+		It("does reset the udp after closing", func() {
+			con.Close()
+			Expect(con.UDP).To(BeNil())
 		})
 	})
 

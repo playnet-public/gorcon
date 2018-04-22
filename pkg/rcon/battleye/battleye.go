@@ -35,6 +35,8 @@ type udpDialer interface {
 // UDPConnection interface defines all udp functions required and is used primarily for mocking
 //go:generate counterfeiter -o ../../mocks/udp_connection.go --fake-name UDPConnection . UDPConnection
 type UDPConnection interface {
+	Close() error
+
 	SetReadDeadline(t time.Time) error
 	SetWriteDeadline(t time.Time) error
 }
@@ -56,6 +58,14 @@ func (c *Connection) Open() error {
 
 // Close the connection for graceful shutdown or reconnect
 func (c *Connection) Close() error {
+	if c.UDP == nil {
+		return errors.New("connection must not be nil")
+	}
+	if err := c.UDP.Close(); err != nil {
+		return errors.Wrap(err, "closing udp failed")
+	}
+	// TODO: verify if this should happen always because not resetting will make Open() impossible
+	c.UDP = nil
 	return nil
 }
 

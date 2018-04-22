@@ -38,15 +38,18 @@ var _ = Describe("Client", func() {
 
 var _ = Describe("Connection", func() {
 	var (
-		con  *be.Connection
-		dial *mocks.UDPDialer
-		udp  *mocks.UDPConnection
+		con   *be.Connection
+		dial  *mocks.UDPDialer
+		udp   *mocks.UDPConnection
+		proto *mocks.BattlEyeProtocol
 	)
 
 	BeforeEach(func() {
 		dial = &mocks.UDPDialer{}
+		proto = &mocks.BattlEyeProtocol{}
 		con = &be.Connection{
-			Dialer: dial,
+			Dialer:   dial,
+			Protocol: proto,
 		}
 		udp = &mocks.UDPConnection{}
 		dial.DialUDPReturns(udp, nil)
@@ -55,6 +58,7 @@ var _ = Describe("Connection", func() {
 	Describe("Open", func() {
 		BeforeEach(func() {
 			con.Password = "test"
+			proto.VerifyLoginReturns(protocol.PacketResponse.LoginOk, nil)
 		})
 		It("does not return error", func() {
 			Expect(con.Open()).To(BeNil())
@@ -89,16 +93,32 @@ var _ = Describe("Connection", func() {
 		It("does send a login packet", func() {
 			con.Open()
 			args := udp.WriteArgsForCall(0)
-			Expect(args).To(BeEquivalentTo(protocol.BuildLoginPacket("test")))
+			Expect(args).To(BeEquivalentTo(proto.BuildLoginPacket("test")))
 		})
 		It("does use the stored credentials for building login packets", func() {
 			con.Password = "password"
 			con.Open()
 			args := udp.WriteArgsForCall(0)
-			Expect(args).To(BeEquivalentTo(protocol.BuildLoginPacket("password")))
+			Expect(args).To(BeEquivalentTo(proto.BuildLoginPacket("password")))
 		})
 		It("does return error if sending login packet fails", func() {
 			udp.WriteReturns(0, errors.New("test"))
+			Expect(con.Open()).NotTo(BeNil())
+		})
+		It("does call read after sending login", func() {
+			con.Open()
+			Expect(udp.ReadCallCount()).To(BeEquivalentTo(1))
+		})
+		It("does return error if reading from udp fails", func() {
+			udp.ReadReturns(0, errors.New("test"))
+			Expect(con.Open()).NotTo(BeNil())
+		})
+		It("does return error on invalid login response", func() {
+			proto.VerifyLoginReturns(0, errors.New("test"))
+			Expect(con.Open()).NotTo(BeNil())
+		})
+		It("does return error on invalid login credentials", func() {
+			proto.VerifyLoginReturns(protocol.PacketResponse.LoginFail, nil)
 			Expect(con.Open()).NotTo(BeNil())
 		})
 	})

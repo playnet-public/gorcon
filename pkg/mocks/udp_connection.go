@@ -18,6 +18,19 @@ type UDPConnection struct {
 	closeReturnsOnCall map[int]struct {
 		result1 error
 	}
+	ReadStub        func([]byte) (int, error)
+	readMutex       sync.RWMutex
+	readArgsForCall []struct {
+		arg1 []byte
+	}
+	readReturns struct {
+		result1 int
+		result2 error
+	}
+	readReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	WriteStub        func([]byte) (int, error)
 	writeMutex       sync.RWMutex
 	writeArgsForCall []struct {
@@ -95,6 +108,62 @@ func (fake *UDPConnection) CloseReturnsOnCall(i int, result1 error) {
 	fake.closeReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *UDPConnection) Read(arg1 []byte) (int, error) {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.readMutex.Lock()
+	ret, specificReturn := fake.readReturnsOnCall[len(fake.readArgsForCall)]
+	fake.readArgsForCall = append(fake.readArgsForCall, struct {
+		arg1 []byte
+	}{arg1Copy})
+	fake.recordInvocation("Read", []interface{}{arg1Copy})
+	fake.readMutex.Unlock()
+	if fake.ReadStub != nil {
+		return fake.ReadStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.readReturns.result1, fake.readReturns.result2
+}
+
+func (fake *UDPConnection) ReadCallCount() int {
+	fake.readMutex.RLock()
+	defer fake.readMutex.RUnlock()
+	return len(fake.readArgsForCall)
+}
+
+func (fake *UDPConnection) ReadArgsForCall(i int) []byte {
+	fake.readMutex.RLock()
+	defer fake.readMutex.RUnlock()
+	return fake.readArgsForCall[i].arg1
+}
+
+func (fake *UDPConnection) ReadReturns(result1 int, result2 error) {
+	fake.ReadStub = nil
+	fake.readReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *UDPConnection) ReadReturnsOnCall(i int, result1 int, result2 error) {
+	fake.ReadStub = nil
+	if fake.readReturnsOnCall == nil {
+		fake.readReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.readReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *UDPConnection) Write(arg1 []byte) (int, error) {
@@ -254,6 +323,8 @@ func (fake *UDPConnection) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.closeMutex.RLock()
 	defer fake.closeMutex.RUnlock()
+	fake.readMutex.RLock()
+	defer fake.readMutex.RUnlock()
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
 	fake.setReadDeadlineMutex.RLock()

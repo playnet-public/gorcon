@@ -4,10 +4,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/playnet-public/battleye/protocol"
-
 	"github.com/pkg/errors"
 
+	be "github.com/playnet-public/battleye/protocol"
 	"github.com/playnet-public/gorcon/pkg/rcon"
 )
 
@@ -27,6 +26,8 @@ type Connection struct {
 	Dialer   udpDialer
 
 	UDP UDPConnection
+
+	Protocol protocol
 }
 
 //go:generate counterfeiter -o ../../mocks/udp_dialer.go --fake-name UDPDialer . udpDialer
@@ -34,10 +35,17 @@ type udpDialer interface {
 	DialUDP(string, *net.UDPAddr, *net.UDPAddr) (UDPConnection, error)
 }
 
+//go:generate counterfeiter -o ../../mocks/battleye_protocol.go --fake-name BattlEyeProtocol . protocol
+type protocol interface {
+	BuildLoginPacket(string) []byte
+	VerifyLogin([]byte) (byte, error)
+}
+
 // UDPConnection interface defines all udp functions required and is used primarily for mocking
 //go:generate counterfeiter -o ../../mocks/udp_connection.go --fake-name UDPConnection . UDPConnection
 type UDPConnection interface {
 	Close() error
+	Read([]byte) (int, error)
 	Write([]byte) (int, error)
 
 	SetReadDeadline(t time.Time) error
@@ -57,10 +65,25 @@ func (c *Connection) Open() error {
 	c.UDP.SetReadDeadline(time.Now().Add(time.Second * 2)) // TODO: Evaluate if this is required
 	c.UDP.SetWriteDeadline(time.Now().Add(time.Millisecond * 100))
 
-	_, err = c.UDP.Write(protocol.BuildLoginPacket(c.Password))
+	buf := make([]byte, 9)
+	_, err = c.UDP.Write(c.Protocol.BuildLoginPacket(c.Password))
 	if err != nil {
 		return errors.Wrap(err, "sending login packet failed")
 	}
+
+	n, err := c.UDP.Read(buf)
+	if err != nil {
+		return errors.Wrap(err, "reading login response failed")
+	}
+
+	resp, err := c.Protocol.VerifyLogin(buf[:n])
+	if err != nil {
+		return errors.Wrap(err, "verifying login response failed")
+	}
+	if resp == be.PacketResponse.LoginFail {
+		return errors.New("logging in failed with invalid credentials")
+	}
+
 	return nil
 }
 

@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/playnet-public/battleye/protocol"
+
 	"github.com/pkg/errors"
 
 	"github.com/playnet-public/gorcon/pkg/rcon"
@@ -36,6 +38,7 @@ type udpDialer interface {
 //go:generate counterfeiter -o ../../mocks/udp_connection.go --fake-name UDPConnection . UDPConnection
 type UDPConnection interface {
 	Close() error
+	Write([]byte) (int, error)
 
 	SetReadDeadline(t time.Time) error
 	SetWriteDeadline(t time.Time) error
@@ -53,6 +56,11 @@ func (c *Connection) Open() error {
 	c.UDP = udp
 	c.UDP.SetReadDeadline(time.Now().Add(time.Second * 2)) // TODO: Evaluate if this is required
 	c.UDP.SetWriteDeadline(time.Now().Add(time.Millisecond * 100))
+
+	_, err = c.UDP.Write(protocol.BuildLoginPacket(c.Password))
+	if err != nil {
+		return errors.Wrap(err, "sending login packet failed")
+	}
 	return nil
 }
 

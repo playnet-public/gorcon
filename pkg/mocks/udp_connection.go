@@ -18,6 +18,19 @@ type UDPConnection struct {
 	closeReturnsOnCall map[int]struct {
 		result1 error
 	}
+	WriteStub        func([]byte) (int, error)
+	writeMutex       sync.RWMutex
+	writeArgsForCall []struct {
+		arg1 []byte
+	}
+	writeReturns struct {
+		result1 int
+		result2 error
+	}
+	writeReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
+	}
 	SetReadDeadlineStub        func(t time.Time) error
 	setReadDeadlineMutex       sync.RWMutex
 	setReadDeadlineArgsForCall []struct {
@@ -82,6 +95,62 @@ func (fake *UDPConnection) CloseReturnsOnCall(i int, result1 error) {
 	fake.closeReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *UDPConnection) Write(arg1 []byte) (int, error) {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.writeMutex.Lock()
+	ret, specificReturn := fake.writeReturnsOnCall[len(fake.writeArgsForCall)]
+	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
+		arg1 []byte
+	}{arg1Copy})
+	fake.recordInvocation("Write", []interface{}{arg1Copy})
+	fake.writeMutex.Unlock()
+	if fake.WriteStub != nil {
+		return fake.WriteStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.writeReturns.result1, fake.writeReturns.result2
+}
+
+func (fake *UDPConnection) WriteCallCount() int {
+	fake.writeMutex.RLock()
+	defer fake.writeMutex.RUnlock()
+	return len(fake.writeArgsForCall)
+}
+
+func (fake *UDPConnection) WriteArgsForCall(i int) []byte {
+	fake.writeMutex.RLock()
+	defer fake.writeMutex.RUnlock()
+	return fake.writeArgsForCall[i].arg1
+}
+
+func (fake *UDPConnection) WriteReturns(result1 int, result2 error) {
+	fake.WriteStub = nil
+	fake.writeReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *UDPConnection) WriteReturnsOnCall(i int, result1 int, result2 error) {
+	fake.WriteStub = nil
+	if fake.writeReturnsOnCall == nil {
+		fake.writeReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.writeReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *UDPConnection) SetReadDeadline(t time.Time) error {
@@ -185,6 +254,8 @@ func (fake *UDPConnection) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.closeMutex.RLock()
 	defer fake.closeMutex.RUnlock()
+	fake.writeMutex.RLock()
+	defer fake.writeMutex.RUnlock()
 	fake.setReadDeadlineMutex.RLock()
 	defer fake.setReadDeadlineMutex.RUnlock()
 	fake.setWriteDeadlineMutex.RLock()

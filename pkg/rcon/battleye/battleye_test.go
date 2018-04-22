@@ -5,6 +5,8 @@ import (
 	"net"
 	"testing"
 
+	"github.com/playnet-public/battleye/protocol"
+
 	"github.com/playnet-public/gorcon/pkg/mocks"
 
 	. "github.com/onsi/ginkgo"
@@ -51,6 +53,9 @@ var _ = Describe("Connection", func() {
 	})
 
 	Describe("Open", func() {
+		BeforeEach(func() {
+			con.Password = "test"
+		})
 		It("does not return error", func() {
 			Expect(con.Open()).To(BeNil())
 		})
@@ -79,6 +84,21 @@ var _ = Describe("Connection", func() {
 		})
 		It("returns error if dial fails", func() {
 			dial.DialUDPReturns(nil, errors.New("test"))
+			Expect(con.Open()).NotTo(BeNil())
+		})
+		It("does send a login packet", func() {
+			con.Open()
+			args := udp.WriteArgsForCall(0)
+			Expect(args).To(BeEquivalentTo(protocol.BuildLoginPacket("test")))
+		})
+		It("does use the stored credentials for building login packets", func() {
+			con.Password = "password"
+			con.Open()
+			args := udp.WriteArgsForCall(0)
+			Expect(args).To(BeEquivalentTo(protocol.BuildLoginPacket("password")))
+		})
+		It("does return error if sending login packet fails", func() {
+			udp.WriteReturns(0, errors.New("test"))
 			Expect(con.Open()).NotTo(BeNil())
 		})
 	})

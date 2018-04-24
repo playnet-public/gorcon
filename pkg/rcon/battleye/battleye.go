@@ -125,6 +125,7 @@ func (c *Connection) WriterLoop() error {
 			if c.UDP != nil {
 				c.UDP.Write(be.BuildKeepAlivePacket(c.Sequence()))
 				c.AddKeepAlive()
+				continue
 			}
 			return errors.New("udp connection must not be nil")
 		}

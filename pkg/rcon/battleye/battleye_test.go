@@ -137,9 +137,12 @@ var _ = Describe("Connection", func() {
 			con.KeepAliveTimeout = 0
 		})
 		It("does send at least one keepAlive packet", func() {
-			con.Hold()
-			time.Sleep(time.Second * time.Duration(con.KeepAliveTimeout+1))
+			con.KeepAliveTimeout = 0
+			con.Tomb.Go(con.WriterLoop)
+			<-time.After(time.Millisecond * 2)
+			Expect(con.Tomb.Err()).To(BeEquivalentTo(tomb.ErrStillAlive))
 			Expect(udp.WriteCallCount()).To(BeNumerically(">", 0))
+			con.Close()
 		})
 		It("does exit on close", func() {
 			con.KeepAliveTimeout = 100
@@ -160,20 +163,6 @@ var _ = Describe("Connection", func() {
 		BeforeEach(func() {
 			con.UDP = udp
 			con.KeepAliveTimeout = 0
-		})
-		It("does send at least one keepAlive packet", func() {
-			con.Hold()
-			time.Sleep(time.Second * time.Duration(con.KeepAliveTimeout+1))
-			Expect(udp.WriteCallCount()).To(BeNumerically(">", 0))
-		})
-		It("does exit on close", func() {
-			con.KeepAliveTimeout = 100
-			go func() {
-				time.Sleep(time.Millisecond * 5)
-				con.Close()
-			}()
-			Expect(con.WriterLoop()).To(BeEquivalentTo(tomb.ErrDying))
-
 		})
 		It("does return error if udp is nil", func() {
 			con.UDP = nil

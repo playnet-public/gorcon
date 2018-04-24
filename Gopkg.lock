@@ -23,13 +23,13 @@
   branch = "master"
   name = "github.com/getsentry/raven-go"
   packages = ["."]
-  revision = "d1470f50d3a3a38533355a9fab7393e25a3b4226"
+  revision = "0df589c7a903b6eb2b0df960a8719d64708476c0"
 
 [[projects]]
   branch = "master"
   name = "github.com/kolide/kit"
   packages = ["version"]
-  revision = "2905b8bccb710fd75f6608a46345d764cf58a047"
+  revision = "36eb8dc4391633d1cf91b600b999c7583439f37f"
 
 [[projects]]
   name = "github.com/onsi/ginkgo"
@@ -90,6 +90,12 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/playnet-public/battleye"
+  packages = ["protocol"]
+  revision = "7005a427dc35436b7c9edd37d57af57b2033f7f7"
 
 [[projects]]
   branch = "master"
@@ -159,13 +165,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "a35a21de978d84ffc92f010a153705b170b2f9d1"
+  revision = "5f9ae10d9af5b1c89ae6904293b14b064d4ada23"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "ecfd8b563e1320e7282dccf28ad48ec2c68aaebf"
+  revision = "79b0c6888797020a994db17c8510466c72fe75d9"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -192,6 +198,12 @@
   version = "v0.3.0"
 
 [[projects]]
+  branch = "v2"
+  name = "gopkg.in/tomb.v2"
+  packages = ["."]
+  revision = "d5d1b5820637886def9eef33e03a27a9f166942c"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -200,6 +212,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "71f9294f7d63d036b8a77f133e6c97cdf48ff09baf20d319e903a9d1d3c8ec75"
+  inputs-digest = "64fa7737b473ea088daa2c9d0541edc7eb9098b216c04e4f8172473cba69c460"
   solver-name = "gps-cdcl"
   solver-version = 1

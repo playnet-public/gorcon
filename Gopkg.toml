@@ -31,3 +31,7 @@
 [[constraint]]
   name = "go.uber.org/zap"
   version = "1.8.0"
+
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/tomb.v2"

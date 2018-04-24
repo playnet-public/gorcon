@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	tomb "gopkg.in/tomb.v2"
 
 	be "github.com/playnet-public/battleye/protocol"
 	"github.com/playnet-public/gorcon/pkg/rcon"
@@ -17,8 +18,8 @@ type Client struct {
 }
 
 // NewConnection from the current client's configuration
-func (c *Client) NewConnection() rcon.Connection {
-	return NewConnection()
+func (c *Client) NewConnection(ctx context.Context) rcon.Connection {
+	return NewConnection(ctx)
 }
 
 // Connection is a BattlEye specific implementation of rcon.Connection offering all required rcon generics
@@ -35,20 +36,19 @@ type Connection struct {
 	seq              uint32
 	pingbackCount    int64
 
-	errors     chan error
-	ctx        context.Context
-	disconnect func()
+	errors chan error
+	Tomb   *tomb.Tomb
 }
 
 // NewConnection from the passed in configuration
-func NewConnection() *Connection {
+func NewConnection(ctx context.Context) *Connection {
 	c := &Connection{
 		errors: make(chan error),
 	}
 	atomic.StoreUint32(&c.seq, 0)
 	atomic.StoreInt64(&c.keepAliveCount, 0)
 	atomic.StoreInt64(&c.pingbackCount, 0)
-	c.ctx, c.disconnect = context.WithCancel(context.Background())
+	c.Tomb, ctx = tomb.WithContext(ctx)
 	return c
 }
 
@@ -111,27 +111,53 @@ func (c *Connection) Open() error {
 
 // Hold the connection by sending keepalive packets as required by the battleye protocol
 func (c *Connection) Hold() {
-	go c.WriterLoop()
+	c.Tomb.Go(c.WriterLoop)
+	c.Tomb.Go(c.ReaderLoop)
 }
 
 // WriterLoop for keeping the connection alive
-func (c *Connection) WriterLoop() bool {
+func (c *Connection) WriterLoop() error {
 	for {
 		select {
-		case <-c.ctx.Done():
-			return false
+		case <-c.Tomb.Dying():
+			return tomb.ErrDying
 		case <-time.After(time.Second * time.Duration(c.KeepAliveTimeout)):
 			if c.UDP != nil {
 				c.UDP.Write(be.BuildKeepAlivePacket(c.Sequence()))
 				c.AddKeepAlive()
 			}
+			return errors.New("udp connection must not be nil")
+		}
+	}
+}
+
+// ReaderLoop for keeping the connection alive
+func (c *Connection) ReaderLoop() error {
+	for {
+		select {
+		case <-c.Tomb.Dying():
+			return tomb.ErrDying
+		default:
+			if c.UDP != nil {
+				buf := make([]byte, 4096)
+				_, err := c.UDP.Read(buf)
+				if err, ok := err.(net.Error); ok && err.Timeout() {
+					// TODO: add debug logging here
+					continue
+				}
+				if err != nil {
+					return errors.Wrap(err, "reading udp failed")
+				}
+			}
+			return errors.New("udp connection must not be nil")
 		}
 	}
 }
 
 // Close the connection for graceful shutdown or reconnect
 func (c *Connection) Close() error {
-	c.disconnect()
+	c.Tomb.Kill(errors.New("SIGCLOSE"))
+	c.Tomb.Wait()
 	if c.UDP == nil {
 		return errors.New("connection must not be nil")
 	}

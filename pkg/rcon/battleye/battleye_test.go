@@ -1,10 +1,13 @@
 package battleye_test
 
 import (
+	"context"
 	"errors"
 	"net"
 	"testing"
 	"time"
+
+	"gopkg.in/tomb.v2"
 
 	"github.com/playnet-public/battleye/protocol"
 
@@ -23,16 +26,18 @@ func TestBattlEye(t *testing.T) {
 
 var _ = Describe("Client", func() {
 	var (
-		c *be.Client
+		c   *be.Client
+		ctx context.Context
 	)
 
 	BeforeEach(func() {
 		c = &be.Client{}
+		ctx = context.Background()
 	})
 
 	Describe("NewConnection", func() {
 		It("does not return nil", func() {
-			Expect(c.NewConnection()).NotTo(BeNil())
+			Expect(c.NewConnection(ctx)).NotTo(BeNil())
 		})
 	})
 })
@@ -43,12 +48,14 @@ var _ = Describe("Connection", func() {
 		dial  *mocks.UDPDialer
 		udp   *mocks.UDPConnection
 		proto *mocks.BattlEyeProtocol
+		ctx   context.Context
 	)
 
 	BeforeEach(func() {
 		dial = &mocks.UDPDialer{}
 		proto = &mocks.BattlEyeProtocol{}
-		con = be.NewConnection()
+		ctx = context.Background()
+		con = be.NewConnection(ctx)
 		con.Dialer = dial
 		con.Protocol = proto
 
@@ -123,6 +130,7 @@ var _ = Describe("Connection", func() {
 			Expect(con.Open()).NotTo(BeNil())
 		})
 	})
+
 	Describe("WriterLoop", func() {
 		BeforeEach(func() {
 			con.UDP = udp
@@ -139,14 +147,56 @@ var _ = Describe("Connection", func() {
 				time.Sleep(time.Millisecond * 5)
 				con.Close()
 			}()
-			Expect(con.WriterLoop()).To(BeEquivalentTo(false))
+			Expect(con.WriterLoop()).To(BeEquivalentTo(tomb.ErrDying))
 
+		})
+		It("does return error if udp is nil", func() {
+			con.UDP = nil
+			Expect(con.WriterLoop()).NotTo(BeNil())
+		})
+	})
+
+	Describe("ReaderLoop", func() {
+		BeforeEach(func() {
+			con.UDP = udp
+			con.KeepAliveTimeout = 0
+		})
+		It("does send at least one keepAlive packet", func() {
+			con.Hold()
+			time.Sleep(time.Second * time.Duration(con.KeepAliveTimeout+1))
+			Expect(udp.WriteCallCount()).To(BeNumerically(">", 0))
+		})
+		It("does exit on close", func() {
+			con.KeepAliveTimeout = 100
+			go func() {
+				time.Sleep(time.Millisecond * 5)
+				con.Close()
+			}()
+			Expect(con.WriterLoop()).To(BeEquivalentTo(tomb.ErrDying))
+
+		})
+		It("does return error if udp is nil", func() {
+			con.UDP = nil
+			Expect(con.ReaderLoop()).NotTo(BeNil())
+		})
+		It("does not return on timeout", func() {
+			udp.ReadReturns(0, &timeoutError{})
+			con.Tomb.Go(con.ReaderLoop)
+			<-time.After(time.Millisecond * 2)
+			Expect(con.Tomb.Err()).To(BeEquivalentTo(tomb.ErrStillAlive))
+			Expect(udp.ReadCallCount()).To(BeNumerically(">", 0))
+			con.Close()
+		})
+		It("does return on non-timeout error", func() {
+			udp.ReadReturns(0, errors.New("test"))
+			Expect(con.ReaderLoop()).NotTo(BeNil())
 		})
 	})
 
 	Describe("Close", func() {
 		BeforeEach(func() {
 			con.UDP = udp
+			con.Hold()
 		})
 		It("does not return error", func() {
 			Expect(con.Close()).To(BeNil())
@@ -182,3 +232,11 @@ var _ = Describe("Connection", func() {
 		})
 	})
 })
+
+type timeoutError struct {
+	Err error
+}
+
+func (t *timeoutError) Error() string   { return t.Err.Error() }
+func (t *timeoutError) Timeout() bool   { return true }
+func (t *timeoutError) Temporary() bool { return false }

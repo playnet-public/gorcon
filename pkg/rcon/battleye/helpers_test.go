@@ -1,6 +1,8 @@
 package battleye_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
@@ -12,7 +14,7 @@ var _ = Describe("Connection Helpers", func() {
 	)
 
 	BeforeEach(func() {
-		con = be.NewConnection()
+		con = be.NewConnection(context.Background())
 	})
 
 	Describe("Sequence", func() {

@@ -139,7 +139,7 @@ var _ = Describe("Connection", func() {
 		It("does send at least one keepAlive packet", func() {
 			con.KeepAliveTimeout = 0
 			con.Tomb.Go(con.WriterLoop)
-			<-time.After(time.Millisecond * 2)
+			<-time.After(time.Second * 1)
 			Expect(con.Tomb.Err()).To(BeEquivalentTo(tomb.ErrStillAlive))
 			Expect(udp.WriteCallCount()).To(BeNumerically(">", 0))
 			con.Close()

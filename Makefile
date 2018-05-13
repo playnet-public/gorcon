@@ -43,7 +43,6 @@ all: test install run
 
 # install required tools and dependencies
 deps:
-	go get -u github.com/bborbe/docker_utils/bin/docker_remote_tag_exists
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/golang/lint/golint
 	go get -u github.com/haya14busa/goverage

@@ -147,7 +147,7 @@ var _ = Describe("Connection", func() {
 		It("does exit on close", func() {
 			con.KeepAliveTimeout = 100
 			go func() {
-				time.Sleep(time.Millisecond * 5)
+				time.Sleep(time.Second * 1)
 				con.Close()
 			}()
 			Expect(con.WriterLoop()).To(BeEquivalentTo(tomb.ErrDying))
@@ -171,7 +171,7 @@ var _ = Describe("Connection", func() {
 		It("does not return on timeout", func() {
 			udp.ReadReturns(0, &timeoutError{})
 			con.Tomb.Go(con.ReaderLoop)
-			<-time.After(time.Millisecond * 2)
+			<-time.After(time.Second * 1)
 			Expect(con.Tomb.Err()).To(BeEquivalentTo(tomb.ErrStillAlive))
 			Expect(udp.ReadCallCount()).To(BeNumerically(">", 0))
 			con.Close()
@@ -209,8 +209,33 @@ var _ = Describe("Connection", func() {
 	})
 
 	Describe("Write", func() {
+		BeforeEach(func() {
+			con.UDP = udp
+			proto.BuildCmdPacketStub = protocol.BuildCmdPacket
+		})
 		It("does not return error", func() {
 			Expect(con.Write("")).To(BeNil())
+		})
+		It("does return error if udp connection is nil", func() {
+			con.UDP = nil
+			Expect(con.Write("")).NotTo(BeNil())
+		})
+		It("does call con.Write", func() {
+			con.Write("test")
+			Expect(udp.WriteCallCount()).To(BeEquivalentTo(1))
+		})
+		It("does return error on failed write", func() {
+			udp.WriteReturns(0, errors.New("test"))
+			Expect(con.Write("")).NotTo(BeNil())
+		})
+		It("does write correct command packet", func() {
+			con.Write("test")
+			Expect(udp.WriteArgsForCall(0)).To(BeEquivalentTo(protocol.BuildCmdPacket([]byte("test"), 0)))
+		})
+		It("does increase sequence after write", func() {
+			seq := con.Sequence()
+			con.Write("")
+			Expect(con.Sequence() == seq+1).To(BeTrue())
 		})
 	})
 

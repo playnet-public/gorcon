@@ -61,6 +61,7 @@ type udpDialer interface {
 type protocol interface {
 	BuildLoginPacket(string) []byte
 	VerifyLogin([]byte) (byte, error)
+	BuildCmdPacket([]byte, uint32) []byte
 }
 
 // UDPConnection interface defines all udp functions required and is used primarily for mocking
@@ -133,6 +134,7 @@ func (c *Connection) WriterLoop() error {
 }
 
 // ReaderLoop for keeping the connection alive
+// TODO: Find ocassional DataRace when testing
 func (c *Connection) ReaderLoop() error {
 	for {
 		select {
@@ -171,7 +173,15 @@ func (c *Connection) Close() error {
 }
 
 // Write a command to the connection
-func (c *Connection) Write(string) error {
+func (c *Connection) Write(s string) error {
+	if c.UDP == nil {
+		return errors.New("udp connection must not be nil")
+	}
+	_, err := c.UDP.Write(c.Protocol.BuildCmdPacket([]byte(s), c.Sequence()))
+	if err != nil {
+		return errors.Wrap(err, "writing udp failed")
+	}
+	c.AddSequence()
 	return nil
 }
 

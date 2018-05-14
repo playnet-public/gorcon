@@ -30,6 +30,18 @@ type BattlEyeProtocol struct {
 		result1 byte
 		result2 error
 	}
+	BuildCmdPacketStub        func([]byte, uint32) []byte
+	buildCmdPacketMutex       sync.RWMutex
+	buildCmdPacketArgsForCall []struct {
+		arg1 []byte
+		arg2 uint32
+	}
+	buildCmdPacketReturns struct {
+		result1 []byte
+	}
+	buildCmdPacketReturnsOnCall map[int]struct {
+		result1 []byte
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -138,6 +150,60 @@ func (fake *BattlEyeProtocol) VerifyLoginReturnsOnCall(i int, result1 byte, resu
 	}{result1, result2}
 }
 
+func (fake *BattlEyeProtocol) BuildCmdPacket(arg1 []byte, arg2 uint32) []byte {
+	var arg1Copy []byte
+	if arg1 != nil {
+		arg1Copy = make([]byte, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.buildCmdPacketMutex.Lock()
+	ret, specificReturn := fake.buildCmdPacketReturnsOnCall[len(fake.buildCmdPacketArgsForCall)]
+	fake.buildCmdPacketArgsForCall = append(fake.buildCmdPacketArgsForCall, struct {
+		arg1 []byte
+		arg2 uint32
+	}{arg1Copy, arg2})
+	fake.recordInvocation("BuildCmdPacket", []interface{}{arg1Copy, arg2})
+	fake.buildCmdPacketMutex.Unlock()
+	if fake.BuildCmdPacketStub != nil {
+		return fake.BuildCmdPacketStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.buildCmdPacketReturns.result1
+}
+
+func (fake *BattlEyeProtocol) BuildCmdPacketCallCount() int {
+	fake.buildCmdPacketMutex.RLock()
+	defer fake.buildCmdPacketMutex.RUnlock()
+	return len(fake.buildCmdPacketArgsForCall)
+}
+
+func (fake *BattlEyeProtocol) BuildCmdPacketArgsForCall(i int) ([]byte, uint32) {
+	fake.buildCmdPacketMutex.RLock()
+	defer fake.buildCmdPacketMutex.RUnlock()
+	return fake.buildCmdPacketArgsForCall[i].arg1, fake.buildCmdPacketArgsForCall[i].arg2
+}
+
+func (fake *BattlEyeProtocol) BuildCmdPacketReturns(result1 []byte) {
+	fake.BuildCmdPacketStub = nil
+	fake.buildCmdPacketReturns = struct {
+		result1 []byte
+	}{result1}
+}
+
+func (fake *BattlEyeProtocol) BuildCmdPacketReturnsOnCall(i int, result1 []byte) {
+	fake.BuildCmdPacketStub = nil
+	if fake.buildCmdPacketReturnsOnCall == nil {
+		fake.buildCmdPacketReturnsOnCall = make(map[int]struct {
+			result1 []byte
+		})
+	}
+	fake.buildCmdPacketReturnsOnCall[i] = struct {
+		result1 []byte
+	}{result1}
+}
+
 func (fake *BattlEyeProtocol) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -145,6 +211,8 @@ func (fake *BattlEyeProtocol) Invocations() map[string][][]interface{} {
 	defer fake.buildLoginPacketMutex.RUnlock()
 	fake.verifyLoginMutex.RLock()
 	defer fake.verifyLoginMutex.RUnlock()
+	fake.buildCmdPacketMutex.RLock()
+	defer fake.buildCmdPacketMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -23,8 +23,8 @@ type Connection interface {
 	Open() error
 	// Close the connection for graceful shutdown or reconnect
 	Close() error
-	// Write a command to the connection
-	Write(string) error
+	// Write a command to the connection and return the resulting transmission
+	Write(string) (Transmission, error)
 	// Listen for events on the connection. This is a blocking call sending on the passed in channel and returning once an error occurs
 	Listen(chan<- Event) error
 }
@@ -33,6 +33,16 @@ type Connection interface {
 //go:generate counterfeiter -o ../mocks/rcon_client.go --fake-name RconClient . Client
 type Client interface {
 	NewConnection() Connection
+}
+
+// Transmission is the interface describing rcon commands and their respective response.
+// It offers the use of specific types internally while still enabling interoperability between the general rcon interface
+//go:generate counterfeiter -o ../mocks/rcon_transmission.go --fake-name RconTransmission . Transmission
+type Transmission interface {
+	Key() uint32
+	Request() string
+	Done() bool
+	Response() string
 }
 
 // Event describes an rcon event happening on the server and being received by the connection

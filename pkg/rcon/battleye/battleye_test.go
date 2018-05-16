@@ -212,13 +212,16 @@ var _ = Describe("Connection", func() {
 		BeforeEach(func() {
 			con.UDP = udp
 			proto.BuildCmdPacketStub = protocol.BuildCmdPacket
+			con.ResetSequence()
 		})
 		It("does not return error", func() {
-			Expect(con.Write("")).To(BeNil())
+			_, err := con.Write("")
+			Expect(err).To(BeNil())
 		})
 		It("does return error if udp connection is nil", func() {
 			con.UDP = nil
-			Expect(con.Write("")).NotTo(BeNil())
+			_, err := con.Write("")
+			Expect(err).NotTo(BeNil())
 		})
 		It("does call con.Write", func() {
 			con.Write("test")
@@ -226,11 +229,12 @@ var _ = Describe("Connection", func() {
 		})
 		It("does return error on failed write", func() {
 			udp.WriteReturns(0, errors.New("test"))
-			Expect(con.Write("")).NotTo(BeNil())
+			_, err := con.Write("")
+			Expect(err).NotTo(BeNil())
 		})
 		It("does write correct command packet", func() {
 			con.Write("test")
-			Expect(udp.WriteArgsForCall(0)).To(BeEquivalentTo(protocol.BuildCmdPacket([]byte("test"), 0)))
+			Expect(udp.WriteArgsForCall(0)).To(BeEquivalentTo(protocol.BuildCmdPacket([]byte("test"), 1)))
 		})
 		It("does increase sequence after write", func() {
 			seq := con.Sequence()

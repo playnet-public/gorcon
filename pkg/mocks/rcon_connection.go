@@ -26,16 +26,18 @@ type RconConnection struct {
 	closeReturnsOnCall map[int]struct {
 		result1 error
 	}
-	WriteStub        func(string) error
+	WriteStub        func(string) (rcon.Transmission, error)
 	writeMutex       sync.RWMutex
 	writeArgsForCall []struct {
 		arg1 string
 	}
 	writeReturns struct {
-		result1 error
+		result1 rcon.Transmission
+		result2 error
 	}
 	writeReturnsOnCall map[int]struct {
-		result1 error
+		result1 rcon.Transmission
+		result2 error
 	}
 	ListenStub        func(chan<- rcon.Event) error
 	listenMutex       sync.RWMutex
@@ -132,7 +134,7 @@ func (fake *RconConnection) CloseReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *RconConnection) Write(arg1 string) error {
+func (fake *RconConnection) Write(arg1 string) (rcon.Transmission, error) {
 	fake.writeMutex.Lock()
 	ret, specificReturn := fake.writeReturnsOnCall[len(fake.writeArgsForCall)]
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
@@ -144,9 +146,9 @@ func (fake *RconConnection) Write(arg1 string) error {
 		return fake.WriteStub(arg1)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	return fake.writeReturns.result1
+	return fake.writeReturns.result1, fake.writeReturns.result2
 }
 
 func (fake *RconConnection) WriteCallCount() int {
@@ -161,23 +163,26 @@ func (fake *RconConnection) WriteArgsForCall(i int) string {
 	return fake.writeArgsForCall[i].arg1
 }
 
-func (fake *RconConnection) WriteReturns(result1 error) {
+func (fake *RconConnection) WriteReturns(result1 rcon.Transmission, result2 error) {
 	fake.WriteStub = nil
 	fake.writeReturns = struct {
-		result1 error
-	}{result1}
+		result1 rcon.Transmission
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *RconConnection) WriteReturnsOnCall(i int, result1 error) {
+func (fake *RconConnection) WriteReturnsOnCall(i int, result1 rcon.Transmission, result2 error) {
 	fake.WriteStub = nil
 	if fake.writeReturnsOnCall == nil {
 		fake.writeReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 rcon.Transmission
+			result2 error
 		})
 	}
 	fake.writeReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 rcon.Transmission
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *RconConnection) Listen(arg1 chan<- rcon.Event) error {

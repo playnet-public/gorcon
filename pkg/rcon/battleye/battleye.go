@@ -3,6 +3,7 @@ package battleye
 import (
 	"context"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -31,10 +32,12 @@ type Connection struct {
 	UDP      UDPConnection
 	Protocol protocol
 
-	KeepAliveTimeout int
-	keepAliveCount   int64
-	seq              uint32
-	pingbackCount    int64
+	KeepAliveTimeout    int
+	keepAliveCount      int64
+	seq                 uint32
+	pingbackCount       int64
+	transmissions       map[uint32]*Transmission
+	transmissionsMutext sync.RWMutex
 
 	errors chan error
 	Tomb   *tomb.Tomb
@@ -48,7 +51,8 @@ func NewConnection(ctx context.Context) *Connection {
 	atomic.StoreUint32(&c.seq, 0)
 	atomic.StoreInt64(&c.keepAliveCount, 0)
 	atomic.StoreInt64(&c.pingbackCount, 0)
-	c.Tomb, ctx = tomb.WithContext(ctx)
+	c.transmissions = make(map[uint32]*Transmission)
+	c.Tomb, _ = tomb.WithContext(ctx)
 	return c
 }
 
@@ -173,16 +177,18 @@ func (c *Connection) Close() error {
 }
 
 // Write a command to the connection
-func (c *Connection) Write(s string) error {
+func (c *Connection) Write(cmd string) (rcon.Transmission, error) {
 	if c.UDP == nil {
-		return errors.New("udp connection must not be nil")
+		return nil, errors.New("udp connection must not be nil")
 	}
-	_, err := c.UDP.Write(c.Protocol.BuildCmdPacket([]byte(s), c.Sequence()))
+	seq := c.AddSequence()
+	trm := NewTransmission(cmd)
+	c.AddTransmission(seq, trm)
+	_, err := c.UDP.Write(c.Protocol.BuildCmdPacket([]byte(trm.Request()), seq))
 	if err != nil {
-		return errors.Wrap(err, "writing udp failed")
+		return nil, errors.Wrap(err, "writing udp failed")
 	}
-	c.AddSequence()
-	return nil
+	return trm, nil
 }
 
 // Listen for events on the connection. This is a blocking call sending on the passed in channel and returning once an error occurs

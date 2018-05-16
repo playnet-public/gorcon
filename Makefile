@@ -59,7 +59,7 @@ gotest:
 
 test:
 	@go get github.com/onsi/ginkgo/ginkgo
-	@ginkgo -r -race -cover
+	@ginkgo -r -race
 
 # install passed in tool project
 install:
@@ -106,25 +106,6 @@ clean:
 
 version:
 	@echo $(VERSION)
-
-# install docker tag check
-docker_remote_tag_exists:
-	@go get github.com/bborbe/docker_utils/bin/docker_remote_tag_exists
-
-# trigger only if docker tag not present
-trigger: docker_remote_tag_exists
-	@exists=`docker_remote_tag_exists \
-		-registry=${REGISTRY} \
-		-repository="${IMAGE}" \
-		-credentialsfromfile \
-		-tag="${VERSION}" \
-		-alsologtostderr \
-		-v=0`; \
-	trigger="build"; \
-	if [ "$${exists}" = "true" ]; then \
-		trigger="skip"; \
-	fi; \
-	echo $${trigger}
 
 # create build dir
 .pre-build:

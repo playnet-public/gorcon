@@ -184,6 +184,10 @@ var _ = Describe("Connection", func() {
 
 	Describe("Close", func() {
 		BeforeEach(func() {
+			con = be.NewConnection(ctx)
+			con.Dialer = dial
+			con.Protocol = proto
+			udp = &mocks.UDPConnection{}
 			con.UDP = udp
 			con.Hold()
 		})

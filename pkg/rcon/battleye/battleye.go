@@ -138,7 +138,6 @@ func (c *Connection) WriterLoop() error {
 }
 
 // ReaderLoop for keeping the connection alive
-// TODO: Find ocassional DataRace when testing
 func (c *Connection) ReaderLoop() error {
 	for {
 		select {

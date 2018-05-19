@@ -1,6 +1,8 @@
 package battleye_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
@@ -28,8 +30,13 @@ var _ = Describe("Transmission", func() {
 	})
 
 	Describe("Done", func() {
-		It("should return false", func() {
-			Expect(t.Done()).To(BeEquivalentTo(false))
+		It("should block", func() {
+			select {
+			case <-t.Done():
+				Expect(false).To(BeTrue())
+			case <-time.After(time.Millisecond):
+				Expect(true).To(BeTrue())
+			}
 		})
 	})
 

@@ -9,7 +9,8 @@ import (
 
 	"gopkg.in/tomb.v2"
 
-	"github.com/playnet-public/battleye/protocol"
+	be_proto "github.com/playnet-public/battleye/battleye"
+	be_mocks "github.com/playnet-public/battleye/mocks"
 
 	"github.com/playnet-public/gorcon/pkg/mocks"
 
@@ -47,13 +48,13 @@ var _ = Describe("Connection", func() {
 		con   *be.Connection
 		dial  *mocks.UDPDialer
 		udp   *mocks.UDPConnection
-		proto *mocks.BattlEyeProtocol
+		proto *be_mocks.Protocol
 		ctx   context.Context
 	)
 
 	BeforeEach(func() {
 		dial = &mocks.UDPDialer{}
-		proto = &mocks.BattlEyeProtocol{}
+		proto = &be_mocks.Protocol{}
 		ctx = context.Background()
 		con = be.NewConnection(ctx)
 		con.Dialer = dial
@@ -66,7 +67,7 @@ var _ = Describe("Connection", func() {
 	Describe("Open", func() {
 		BeforeEach(func() {
 			con.Password = "test"
-			proto.VerifyLoginReturns(protocol.PacketResponse.LoginOk, nil)
+			proto.VerifyLoginReturns(nil)
 		})
 		It("does not return error", func() {
 			Expect(con.Open()).To(BeNil())
@@ -101,13 +102,13 @@ var _ = Describe("Connection", func() {
 		It("does send a login packet", func() {
 			con.Open()
 			args := udp.WriteArgsForCall(0)
-			Expect(args).To(BeEquivalentTo(proto.BuildLoginPacket("test")))
+			Expect(args).To(BeEquivalentTo(con.Protocol.BuildLoginPacket("test")))
 		})
 		It("does use the stored credentials for building login packets", func() {
 			con.Password = "password"
 			con.Open()
 			args := udp.WriteArgsForCall(0)
-			Expect(args).To(BeEquivalentTo(proto.BuildLoginPacket("password")))
+			Expect(args).To(BeEquivalentTo(con.Protocol.BuildLoginPacket("password")))
 		})
 		It("does return error if sending login packet fails", func() {
 			udp.WriteReturns(0, errors.New("test"))
@@ -122,11 +123,11 @@ var _ = Describe("Connection", func() {
 			Expect(con.Open()).NotTo(BeNil())
 		})
 		It("does return error on invalid login response", func() {
-			proto.VerifyLoginReturns(0, errors.New("test"))
+			proto.VerifyLoginReturns(errors.New("test"))
 			Expect(con.Open()).NotTo(BeNil())
 		})
 		It("does return error on invalid login credentials", func() {
-			proto.VerifyLoginReturns(protocol.PacketResponse.LoginFail, nil)
+			proto.VerifyLoginReturns(errors.New("test"))
 			Expect(con.Open()).NotTo(BeNil())
 		})
 	})
@@ -224,7 +225,7 @@ var _ = Describe("Connection", func() {
 	Describe("Write", func() {
 		BeforeEach(func() {
 			con.UDP = udp
-			proto.BuildCmdPacketStub = protocol.BuildCmdPacket
+			proto.BuildCmdPacketStub = be_proto.New().BuildCmdPacket
 			con.ResetSequence()
 		})
 		It("does not return error", func() {
@@ -247,7 +248,7 @@ var _ = Describe("Connection", func() {
 		})
 		It("does write correct command packet", func() {
 			con.Write("test")
-			Expect(udp.WriteArgsForCall(0)).To(BeEquivalentTo(protocol.BuildCmdPacket([]byte("test"), 1)))
+			Expect(udp.WriteArgsForCall(0)).To(BeEquivalentTo(con.Protocol.BuildCmdPacket([]byte("test"), 1)))
 		})
 		It("does increase sequence after write", func() {
 			seq := con.Sequence()

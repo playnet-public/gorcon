@@ -26,14 +26,14 @@ type RconTransmission struct {
 	requestReturnsOnCall map[int]struct {
 		result1 string
 	}
-	DoneStub        func() bool
+	DoneStub        func() <-chan bool
 	doneMutex       sync.RWMutex
 	doneArgsForCall []struct{}
 	doneReturns     struct {
-		result1 bool
+		result1 <-chan bool
 	}
 	doneReturnsOnCall map[int]struct {
-		result1 bool
+		result1 <-chan bool
 	}
 	ResponseStub        func() string
 	responseMutex       sync.RWMutex
@@ -128,7 +128,7 @@ func (fake *RconTransmission) RequestReturnsOnCall(i int, result1 string) {
 	}{result1}
 }
 
-func (fake *RconTransmission) Done() bool {
+func (fake *RconTransmission) Done() <-chan bool {
 	fake.doneMutex.Lock()
 	ret, specificReturn := fake.doneReturnsOnCall[len(fake.doneArgsForCall)]
 	fake.doneArgsForCall = append(fake.doneArgsForCall, struct{}{})
@@ -149,22 +149,22 @@ func (fake *RconTransmission) DoneCallCount() int {
 	return len(fake.doneArgsForCall)
 }
 
-func (fake *RconTransmission) DoneReturns(result1 bool) {
+func (fake *RconTransmission) DoneReturns(result1 <-chan bool) {
 	fake.DoneStub = nil
 	fake.doneReturns = struct {
-		result1 bool
+		result1 <-chan bool
 	}{result1}
 }
 
-func (fake *RconTransmission) DoneReturnsOnCall(i int, result1 bool) {
+func (fake *RconTransmission) DoneReturnsOnCall(i int, result1 <-chan bool) {
 	fake.DoneStub = nil
 	if fake.doneReturnsOnCall == nil {
 		fake.doneReturnsOnCall = make(map[int]struct {
-			result1 bool
+			result1 <-chan bool
 		})
 	}
 	fake.doneReturnsOnCall[i] = struct {
-		result1 bool
+		result1 <-chan bool
 	}{result1}
 }
 

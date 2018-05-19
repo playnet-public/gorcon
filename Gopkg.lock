@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  name = "github.com/apache/thrift"
-  packages = ["lib/go/thrift"]
-  revision = "b2a4d4ae21c789b689dd162deb819665567f481c"
-  version = "0.10.0"
-
-[[projects]]
   name = "github.com/certifi/gocertifi"
   packages = ["."]
   revision = "deb3ae2ef2610fde3330947281941c562861188b"
@@ -15,21 +9,15 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/codahale/hdrhistogram"
-  packages = ["."]
-  revision = "3a0bb77429bd3a61596f5e8a3172445844342120"
-
-[[projects]]
-  branch = "master"
   name = "github.com/getsentry/raven-go"
   packages = ["."]
-  revision = "0df589c7a903b6eb2b0df960a8719d64708476c0"
+  revision = "ed7bcb39ff10f39ab08e317ce16df282845852fa"
 
 [[projects]]
   branch = "master"
   name = "github.com/kolide/kit"
   packages = ["version"]
-  revision = "36eb8dc4391633d1cf91b600b999c7583439f37f"
+  revision = "efbc10368270cec76483472fd8c02ecc54e15a0d"
 
 [[projects]]
   name = "github.com/onsi/ginkgo"
@@ -53,8 +41,8 @@
     "reporters/stenographer/support/go-isatty",
     "types"
   ]
-  revision = "9eda700730cba42af70d53180f9dcce9266bc2bc"
-  version = "v1.4.0"
+  revision = "fa5fabab2a1bfbd924faf4c067d07ae414e2aedf"
+  version = "v1.5.0"
 
 [[projects]]
   name = "github.com/onsi/gomega"
@@ -72,18 +60,8 @@
     "matchers/support/goraph/util",
     "types"
   ]
-  revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
-  version = "v1.3.0"
-
-[[projects]]
-  name = "github.com/opentracing/opentracing-go"
-  packages = [
-    ".",
-    "ext",
-    "log"
-  ]
-  revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
-  version = "v1.0.2"
+  revision = "62bff4df71bdbc266561a0caee19f0594b17c240"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -92,50 +70,25 @@
   version = "v0.8.0"
 
 [[projects]]
-  branch = "master"
   name = "github.com/playnet-public/battleye"
-  packages = ["protocol"]
-  revision = "7005a427dc35436b7c9edd37d57af57b2033f7f7"
+  packages = [
+    "battleye",
+    "mocks"
+  ]
+  revision = "efb09e473437b0e118149be7f33408b6edb082cc"
+  version = "v2"
 
 [[projects]]
   branch = "master"
-  name = "github.com/playnet-public/libs"
+  name = "github.com/seibert-media/golibs"
   packages = ["log"]
-  revision = "a85e661f7d1030fa57e8e74268b6069811fa038c"
-
-[[projects]]
-  name = "github.com/uber/jaeger-client-go"
-  packages = [
-    ".",
-    "config",
-    "internal/baggage",
-    "internal/baggage/remote",
-    "internal/spanlog",
-    "internal/throttler",
-    "log",
-    "log/zap",
-    "rpcmetrics",
-    "thrift-gen/agent",
-    "thrift-gen/baggage",
-    "thrift-gen/jaeger",
-    "thrift-gen/sampling",
-    "thrift-gen/zipkincore",
-    "utils"
-  ]
-  revision = "3205d4aabc55c1a13b1e48d3db793bc8cd37bd16"
-  version = "v2.13.0"
-
-[[projects]]
-  name = "github.com/uber/jaeger-lib"
-  packages = ["metrics"]
-  revision = "4267858c0679cd4e47cefed8d7f70fd386cfb567"
-  version = "v1.4.0"
+  revision = "1992c9b73f1dd41089e91dafab33df6d8ec93953"
 
 [[projects]]
   name = "go.uber.org/atomic"
   packages = ["."]
-  revision = "8474b86a5a6f79c443ce4b2992817ff32cf208b8"
-  version = "v1.3.1"
+  revision = "1ea20fb1cbb1cc08cbd0d913a96dead89aa18289"
+  version = "v1.3.2"
 
 [[projects]]
   name = "go.uber.org/multierr"
@@ -165,13 +118,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "5f9ae10d9af5b1c89ae6904293b14b064d4ada23"
+  revision = "57065200b4b034a1c8ad54ff77069408c2218ae6"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "79b0c6888797020a994db17c8510466c72fe75d9"
+  revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -212,6 +165,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "64fa7737b473ea088daa2c9d0541edc7eb9098b216c04e4f8172473cba69c460"
+  inputs-digest = "67212ed2328d00956cbe290ad08f62037de83eb8778a54d0b31485aed634d1e1"
   solver-name = "gps-cdcl"
   solver-version = 1

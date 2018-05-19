@@ -72,5 +72,10 @@ var _ = Describe("Connection Helpers", func() {
 			con.AddTransmission(0, be.NewTransmission("test"))
 			Expect(con.GetTransmission(0)).NotTo(BeNil())
 		})
+		It("should remove said transmission on deltet", func() {
+			con.AddTransmission(0, be.NewTransmission("test"))
+			con.DeleteTransmission(0)
+			Expect(con.GetTransmission(0)).To(BeNil())
+		})
 	})
 })

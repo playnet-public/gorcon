@@ -41,7 +41,7 @@ type Client interface {
 type Transmission interface {
 	Key() uint32
 	Request() string
-	Done() bool
+	Done() <-chan bool
 	Response() string
 }
 

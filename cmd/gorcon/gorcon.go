@@ -1,6 +1,6 @@
-// Copyright 2018 The K8s-Ingress Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// Copyright 2018 The GoRcon Authors and 'play-net.org' owners. All rights reserved.
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
 
 package main
 
@@ -10,7 +10,7 @@ import (
 	"runtime"
 
 	"github.com/kolide/kit/version"
-	"github.com/playnet-public/libs/log"
+	context "github.com/seibert-media/golibs/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -49,9 +49,9 @@ func main() {
 		}
 	}
 
-	log := log.New(appKey, *sentryDsn, *dbg).WithFields(zapFields...)
-	defer log.Sync()
-	log.Info("preparing")
+	ctx := context.New(*sentryDsn, *dbg).WithFields(zapFields...)
+	defer ctx.Sync()
+	ctx.Info("preparing")
 
-	log.Info("finished")
+	ctx.Info("finished")
 }

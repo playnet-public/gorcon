@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	tomb "gopkg.in/tomb.v2"
 
-	be "github.com/playnet-public/battleye/protocol"
+	be_proto "github.com/playnet-public/battleye/battleye"
 	"github.com/playnet-public/gorcon/pkg/rcon"
 )
 
@@ -30,13 +30,13 @@ type Connection struct {
 	Dialer   udpDialer
 
 	UDP      UDPConnection
-	Protocol protocol
+	Protocol be_proto.Protocol
 
 	KeepAliveTimeout    int
 	keepAliveCount      int64
 	seq                 uint32
 	pingbackCount       int64
-	transmissions       map[uint32]*Transmission
+	transmissions       map[be_proto.Sequence]*Transmission
 	transmissionsMutext sync.RWMutex
 
 	errors chan error
@@ -46,12 +46,13 @@ type Connection struct {
 // NewConnection from the passed in configuration
 func NewConnection(ctx context.Context) *Connection {
 	c := &Connection{
-		errors: make(chan error),
+		errors:   make(chan error),
+		Protocol: be_proto.New(),
 	}
 	atomic.StoreUint32(&c.seq, 0)
 	atomic.StoreInt64(&c.keepAliveCount, 0)
 	atomic.StoreInt64(&c.pingbackCount, 0)
-	c.transmissions = make(map[uint32]*Transmission)
+	c.transmissions = make(map[be_proto.Sequence]*Transmission)
 	c.Tomb, _ = tomb.WithContext(ctx)
 	return c
 }
@@ -59,13 +60,6 @@ func NewConnection(ctx context.Context) *Connection {
 //go:generate counterfeiter -o ../../mocks/udp_dialer.go --fake-name UDPDialer . udpDialer
 type udpDialer interface {
 	DialUDP(string, *net.UDPAddr, *net.UDPAddr) (UDPConnection, error)
-}
-
-//go:generate counterfeiter -o ../../mocks/battleye_protocol.go --fake-name BattlEyeProtocol . protocol
-type protocol interface {
-	BuildLoginPacket(string) []byte
-	VerifyLogin([]byte) (byte, error)
-	BuildCmdPacket([]byte, uint32) []byte
 }
 
 // UDPConnection interface defines all udp functions required and is used primarily for mocking
@@ -103,12 +97,9 @@ func (c *Connection) Open() error {
 		return errors.Wrap(err, "reading login response failed")
 	}
 
-	resp, err := c.Protocol.VerifyLogin(buf[:n])
+	err = c.Protocol.VerifyLogin(buf[:n])
 	if err != nil {
-		return errors.Wrap(err, "verifying login response failed")
-	}
-	if resp == be.PacketResponse.LoginFail {
-		return errors.New("logging in failed with invalid credentials")
+		return errors.Wrap(err, "login failed")
 	}
 	c.Hold()
 	return nil
@@ -128,7 +119,7 @@ func (c *Connection) WriterLoop() error {
 			return tomb.ErrDying
 		case <-time.After(time.Second * time.Duration(c.KeepAliveTimeout)):
 			if c.UDP != nil {
-				c.UDP.Write(be.BuildKeepAlivePacket(c.Sequence()))
+				c.UDP.Write(c.Protocol.BuildKeepAlivePacket(c.Sequence()))
 				c.AddKeepAlive()
 				continue
 			}
@@ -185,6 +176,7 @@ func (c *Connection) Write(cmd string) (rcon.Transmission, error) {
 	c.AddTransmission(seq, trm)
 	_, err := c.UDP.Write(c.Protocol.BuildCmdPacket([]byte(trm.Request()), seq))
 	if err != nil {
+		c.DeleteTransmission(seq)
 		return nil, errors.Wrap(err, "writing udp failed")
 	}
 	return trm, nil

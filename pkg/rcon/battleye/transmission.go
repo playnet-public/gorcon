@@ -4,7 +4,7 @@ package battleye
 type Transmission struct {
 	seq      uint32
 	request  []byte
-	done     bool
+	done     chan bool
 	response []byte
 }
 
@@ -12,6 +12,7 @@ type Transmission struct {
 func NewTransmission(request string) *Transmission {
 	return &Transmission{
 		request: []byte(request),
+		done:    make(chan bool),
 	}
 }
 
@@ -25,8 +26,8 @@ func (t *Transmission) Request() string {
 	return string(t.request)
 }
 
-// Done returns true if the transmission was finished receiving
-func (t *Transmission) Done() bool {
+// Done returns blocking channel indicating transmission status
+func (t *Transmission) Done() <-chan bool {
 	return t.done
 }
 

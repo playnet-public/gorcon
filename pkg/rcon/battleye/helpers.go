@@ -2,16 +2,18 @@ package battleye
 
 import (
 	"sync/atomic"
+
+	be "github.com/playnet-public/battleye/battleye"
 )
 
 // Sequence gets the current sequence using atomic
-func (c *Connection) Sequence() uint32 {
-	return atomic.LoadUint32(&c.seq)
+func (c *Connection) Sequence() be.Sequence {
+	return be.Sequence(atomic.LoadUint32(&c.seq))
 }
 
 // AddSequence increments the sequence
-func (c *Connection) AddSequence() uint32 {
-	return atomic.AddUint32(&c.seq, 1)
+func (c *Connection) AddSequence() be.Sequence {
+	return be.Sequence(atomic.AddUint32(&c.seq, 1))
 }
 
 // ResetSequence to zero
@@ -50,15 +52,22 @@ func (c *Connection) ResetKeepAlive() {
 }
 
 // AddTransmission for sequence to the connection
-func (c *Connection) AddTransmission(seq uint32, t *Transmission) {
+func (c *Connection) AddTransmission(seq be.Sequence, t *Transmission) {
 	c.transmissionsMutext.Lock()
 	defer c.transmissionsMutext.Unlock()
 	c.transmissions[seq] = t
 }
 
 // GetTransmission for sequence from the connection
-func (c *Connection) GetTransmission(seq uint32) *Transmission {
+func (c *Connection) GetTransmission(seq be.Sequence) *Transmission {
 	c.transmissionsMutext.RLock()
 	defer c.transmissionsMutext.RUnlock()
 	return c.transmissions[seq]
+}
+
+// DeleteTransmission for sequence from the connection
+func (c *Connection) DeleteTransmission(seq be.Sequence) {
+	c.transmissionsMutext.RLock()
+	defer c.transmissionsMutext.RUnlock()
+	delete(c.transmissions, seq)
 }

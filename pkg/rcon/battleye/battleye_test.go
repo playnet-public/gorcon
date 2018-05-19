@@ -189,24 +189,33 @@ var _ = Describe("Connection", func() {
 			con.Protocol = proto
 			udp = &mocks.UDPConnection{}
 			con.UDP = udp
-			con.Hold()
 		})
 		It("does not return error", func() {
+			con.Hold()
 			Expect(con.Close()).To(BeNil())
 		})
 		It("does return error if udp connection is nil", func() {
+			con.Tomb.Go(func() error {
+				for {
+					<-con.Tomb.Dying()
+					return nil
+				}
+			})
 			con.UDP = nil
 			Expect(con.Close()).NotTo(BeNil())
 		})
 		It("calls close on the udp connection", func() {
+			con.Hold()
 			con.Close()
 			Expect(udp.CloseCallCount()).To(BeEquivalentTo(1))
 		})
 		It("does return error if udp close fails", func() {
+			con.Hold()
 			udp.CloseReturns(errors.New("test"))
 			Expect(con.Close()).NotTo(BeNil())
 		})
 		It("does reset the udp after closing", func() {
+			con.Hold()
 			con.Close()
 			Expect(con.UDP).To(BeNil())
 		})
@@ -244,6 +253,10 @@ var _ = Describe("Connection", func() {
 			seq := con.Sequence()
 			con.Write("")
 			Expect(con.Sequence() == seq+1).To(BeTrue())
+		})
+		It("does add transmission to connection at write", func() {
+			con.Write("test")
+			Expect(con.GetTransmission(1)).NotTo(BeNil())
 		})
 	})
 

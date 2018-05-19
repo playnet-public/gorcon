@@ -59,7 +59,7 @@ gotest:
 
 test:
 	@go get github.com/onsi/ginkgo/ginkgo
-	@ginkgo -r -race
+	@ginkgo -r -race -p
 
 # install passed in tool project
 install:

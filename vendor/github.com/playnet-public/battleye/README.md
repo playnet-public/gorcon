@@ -9,7 +9,28 @@ The BattlEye package is implementing the [BattlEye Protocol](https://www.battley
 
 ## Status
 
-This package is being seen as feature complete and changes should not occur.
+### Version 2
+
+The previous version of this package was refactored with a lot of breaking changes. The reason for this was lack of abstraction which made testing in other projects harder.
+
+As we are using TDD/BDD and strafe towards a high level of coverage and overall code quality, we had to make some changes to this.
+The most notable one is that we moved all functionality used by clients themselves into the `Protocol` interface.
+From there we mostly copied the old implementation and created wrappers where necessary.
+While we were at it, there were also some improvements to both the api and type safety.
+
+Using the interface allows us to generate mocks from it to enable better testing in other projects without having to mess with real BE packets (see [mocks/](mocks/)).
+
+This new version might still be subject to improvements and changes that could break the API (even further). We suggest either pinning the state you need by using dependency management tools, or to use the v1 tag if the new features are not important to you.
+
+TODO's:
+- All tests have just been ported to the new structure which results in some legacy test code no longer up to our standards. This should be addressed in the near future and might also offer a good introduction to the project for newcomers.
+
+### Version 1
+
+NOTE: Version 1 is the legacy implementation which works but lacks some abstraction as well as mocks to allow best use in other projects.
+There is no change in features/functionality when upgrading but the overall api and signature was drastically changed.
+
+The git tag v1 is being seen as feature complete and changes should not occur. 
 If bugs in this implementation are found, please report those using GitHub Issues or by opening a Pull Request.
 Whilst being feature complete a reasonable request to this might still make it into the code.
 

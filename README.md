@@ -4,6 +4,7 @@
 [![Build Status](https://travis-ci.org/playnet-public/gorcon.svg?branch=master)](https://travis-ci.org/playnet-public/gorcon)
 [![Docker Repository on Quay](https://quay.io/repository/playnet/gorcon/status "Docker Repository on Quay")](https://quay.io/repository/playnet/gorcon)
 [![GitHub license](https://img.shields.io/badge/license-AGPL-blue.svg)](https://raw.githubusercontent.com/playnet-public/gorcon/master/LICENSE)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/playnet-public/gorcon)
 [![Join Discord at https://discord.gg/dWZkR6R](https://img.shields.io/badge/style-join-green.svg?style=flat&label=Discord)](https://discord.gg/dWZkR6R)
 
 GoRcon is an abstraction layer to map common rcon functionality from various games to a unified api (grpc/rest) while also providing local management functionality to make running game servers easier.

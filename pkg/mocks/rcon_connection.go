@@ -39,16 +39,10 @@ type RconConnection struct {
 		result1 rcon.Transmission
 		result2 error
 	}
-	ListenStub        func(chan<- rcon.Event) error
+	ListenStub        func(chan *rcon.Event)
 	listenMutex       sync.RWMutex
 	listenArgsForCall []struct {
-		arg1 chan<- rcon.Event
-	}
-	listenReturns struct {
-		result1 error
-	}
-	listenReturnsOnCall map[int]struct {
-		result1 error
+		arg1 chan *rcon.Event
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -185,21 +179,16 @@ func (fake *RconConnection) WriteReturnsOnCall(i int, result1 rcon.Transmission,
 	}{result1, result2}
 }
 
-func (fake *RconConnection) Listen(arg1 chan<- rcon.Event) error {
+func (fake *RconConnection) Listen(arg1 chan *rcon.Event) {
 	fake.listenMutex.Lock()
-	ret, specificReturn := fake.listenReturnsOnCall[len(fake.listenArgsForCall)]
 	fake.listenArgsForCall = append(fake.listenArgsForCall, struct {
-		arg1 chan<- rcon.Event
+		arg1 chan *rcon.Event
 	}{arg1})
 	fake.recordInvocation("Listen", []interface{}{arg1})
 	fake.listenMutex.Unlock()
 	if fake.ListenStub != nil {
-		return fake.ListenStub(arg1)
+		fake.ListenStub(arg1)
 	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.listenReturns.result1
 }
 
 func (fake *RconConnection) ListenCallCount() int {
@@ -208,29 +197,10 @@ func (fake *RconConnection) ListenCallCount() int {
 	return len(fake.listenArgsForCall)
 }
 
-func (fake *RconConnection) ListenArgsForCall(i int) chan<- rcon.Event {
+func (fake *RconConnection) ListenArgsForCall(i int) chan *rcon.Event {
 	fake.listenMutex.RLock()
 	defer fake.listenMutex.RUnlock()
 	return fake.listenArgsForCall[i].arg1
-}
-
-func (fake *RconConnection) ListenReturns(result1 error) {
-	fake.ListenStub = nil
-	fake.listenReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *RconConnection) ListenReturnsOnCall(i int, result1 error) {
-	fake.ListenStub = nil
-	if fake.listenReturnsOnCall == nil {
-		fake.listenReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.listenReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
 }
 
 func (fake *RconConnection) Invocations() map[string][][]interface{} {

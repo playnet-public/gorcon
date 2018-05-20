@@ -39,15 +39,17 @@ type Connection struct {
 	transmissions       map[be_proto.Sequence]*Transmission
 	transmissionsMutext sync.RWMutex
 
-	errors chan error
-	Tomb   *tomb.Tomb
+	listeners      []chan *rcon.Event
+	listenersMutex sync.RWMutex
+
+	Tomb *tomb.Tomb
 }
 
 // NewConnection from the passed in configuration
 func NewConnection(ctx context.Context) *Connection {
 	c := &Connection{
-		errors:   make(chan error),
-		Protocol: be_proto.New(),
+		Protocol:  be_proto.New(),
+		listeners: []chan *rcon.Event{},
 	}
 	atomic.StoreUint32(&c.seq, 0)
 	atomic.StoreInt64(&c.keepAliveCount, 0)
@@ -182,7 +184,9 @@ func (c *Connection) Write(cmd string) (rcon.Transmission, error) {
 	return trm, nil
 }
 
-// Listen for events on the connection. This is a blocking call sending on the passed in channel and returning once an error occurs
-func (c *Connection) Listen(chan<- rcon.Event) error {
-	return nil
+// Listen for events on the connection.
+func (c *Connection) Listen(to chan *rcon.Event) {
+	c.listenersMutex.Lock()
+	defer c.listenersMutex.Unlock()
+	c.listeners = append(c.listeners, to)
 }

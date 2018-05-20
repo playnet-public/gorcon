@@ -263,8 +263,8 @@ var _ = Describe("Connection", func() {
 
 	Describe("Listen", func() {
 		It("does not return error", func() {
-			ch := make(chan<- rcon.Event)
-			Expect(con.Listen(ch)).To(BeNil())
+			ch := make(chan *rcon.Event)
+			con.Listen(ch)
 		})
 	})
 })

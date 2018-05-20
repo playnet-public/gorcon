@@ -1,10 +1,12 @@
 package battleye
 
 import (
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	be_proto "github.com/playnet-public/battleye/battleye"
+	"github.com/playnet-public/gorcon/pkg/rcon"
 )
 
 // HandlePacket received from UDP connection
@@ -96,6 +98,40 @@ func (c *Connection) HandleResponse(p be_proto.Packet) error {
 }
 
 // HandleServerMessage containing chat and events
-func (c *Connection) HandleServerMessage() error {
+func (c *Connection) HandleServerMessage(p be_proto.Packet) error {
+	s, err := c.Protocol.Sequence(p)
+	if err != nil {
+		return errors.Wrap(err, "handling server message")
+	}
+
+	var channels = []string{
+		"(Group)",
+		"(Vehicle)",
+		"(Unknown)",
+	}
+	var t = rcon.TypeEvent
+	for _, c := range channels {
+		if strings.HasPrefix(string(p), c) {
+			t = rcon.TypeChat
+		}
+	}
+
+	event := &rcon.Event{
+		Timestamp: time.Now(),
+		Type:      t,
+		Message:   string(p),
+	}
+
+	_, err = c.UDP.Write(c.Protocol.BuildMsgAckPacket(s))
+	if err != nil {
+		return errors.Wrap(err, "handling server message")
+	}
+
+	c.listenersMutex.RLock()
+	defer c.listenersMutex.RUnlock()
+	for _, l := range c.listeners {
+		go func(l chan *rcon.Event) { l <- event }(l)
+	}
+
 	return nil
 }

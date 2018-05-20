@@ -3,6 +3,9 @@ package battleye_test
 import (
 	"context"
 
+	"github.com/playnet-public/gorcon/pkg/mocks"
+	"github.com/playnet-public/gorcon/pkg/rcon"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -15,12 +18,15 @@ var _ = Describe("Reader", func() {
 	var (
 		con *be.Connection
 		pr  *be_mocks.Protocol
+		udp *mocks.UDPConnection
 	)
 
 	BeforeEach(func() {
 		con = be.NewConnection(context.Background())
 		pr = &be_mocks.Protocol{}
+		udp = &mocks.UDPConnection{}
 		con.Protocol = pr
+		con.UDP = udp
 	})
 
 	Describe("HandlePacket", func() {
@@ -173,8 +179,39 @@ var _ = Describe("Reader", func() {
 	})
 
 	Describe("HandleServerMessage", func() {
+		BeforeEach(func() {
+			pr.SequenceReturns(0, nil)
+			udp.WriteReturns(0, nil)
+		})
 		It("does return nil", func() {
-			Expect(con.HandleServerMessage()).To(BeNil())
+			Expect(con.HandleServerMessage(be_proto.Packet("test"))).To(BeNil())
+		})
+		It("does call Sequence with packet", func() {
+			con.HandleServerMessage([]byte("test"))
+			Expect(pr.SequenceCallCount()).To(BeEquivalentTo(1))
+			Expect(pr.SequenceArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
+		})
+		It("does return error if Sequence returns error", func() {
+			pr.SequenceReturns(0, errors.New("test"))
+			Expect(con.HandleServerMessage(nil)).NotTo(BeNil())
+		})
+		It("does send event to channel", func() {
+			c := make(chan *rcon.Event)
+			con.Listen(c)
+			con.HandleServerMessage([]byte("test"))
+			event := <-c
+			Expect(event.Message).NotTo(BeEquivalentTo(""))
+		})
+		It("does set correct type when handling chat event", func() {
+			c := make(chan *rcon.Event)
+			con.Listen(c)
+			con.HandleServerMessage([]byte("(Group) Test"))
+			event := <-c
+			Expect(event.Type).To(BeEquivalentTo(rcon.TypeChat))
+		})
+		It("does return error if UDP.Write fails", func() {
+			udp.WriteReturns(0, errors.New("test"))
+			Expect(con.HandleServerMessage([]byte("test"))).NotTo(BeNil())
 		})
 	})
 })

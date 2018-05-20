@@ -25,8 +25,8 @@ type Connection interface {
 	Close() error
 	// Write a command to the connection and return the resulting transmission
 	Write(string) (Transmission, error)
-	// Listen for events on the connection. This is a blocking call sending on the passed in channel and returning once an error occurs
-	Listen(chan<- Event) error
+	// Listen for events on the connection.
+	Listen(chan *Event)
 }
 
 // Client is the interface for specific rcon implementations which provides connections or acts as connection pool
@@ -48,8 +48,15 @@ type Transmission interface {
 // Event describes an rcon event happening on the server and being received by the connection
 type Event struct {
 	Timestamp time.Time
+	Type      byte
 	Message   string
 }
+
+// TypeEvent identifies default rcon events
+var TypeEvent byte = 0x00
+
+// TypeChat identifies chat events sent via rcon
+var TypeChat byte = 0x01
 
 // Connect to rcon server
 func (r *Rcon) Connect() error {

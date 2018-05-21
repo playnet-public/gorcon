@@ -152,6 +152,7 @@ func (c *Connection) ReaderLoop(ctx context.Context) func() error {
 					if err != nil {
 						return errors.Wrap(err, "reading udp failed")
 					}
+					go c.HandlePacket(ctx, buf)
 				}
 				return errors.New("udp connection must not be nil")
 			}

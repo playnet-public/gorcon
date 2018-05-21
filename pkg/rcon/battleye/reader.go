@@ -4,55 +4,56 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/pkg/errors"
 	be_proto "github.com/playnet-public/battleye/battleye"
 	"github.com/playnet-public/gorcon/pkg/rcon"
+	context "github.com/seibert-media/golibs/log"
 )
 
 // HandlePacket received from UDP connection
-func (c *Connection) HandlePacket(p be_proto.Packet) (err error) {
+func (c *Connection) HandlePacket(ctx context.Context, p be_proto.Packet) (err error) {
 	defer func() {
 		err = errors.Wrap(err, "handling packet")
 	}()
 	err = c.Protocol.Verify(p)
 	if err != nil {
-		// TODO: Add logging
+		ctx.Error("handling packet", zap.Error(err))
 		return err
 	}
 	data, err := c.Protocol.Data(p)
 	if err != nil {
-		// TODO: Add logging
+		ctx.Error("handling packet", zap.Error(err))
 		return err
 	}
 
 	// Handle KeepAlive Pingback
 	if len(data) < 1 {
-		// TODO: Add logging
 		c.AddPingback()
+		ctx.Debug("pingback", zap.Int64("count", c.Pingback()))
 		return nil
 	}
 
 	t, err := c.Protocol.Type(p)
 	if err != nil {
-		// TODO: Add logging
+		ctx.Error("handling packet", zap.Error(err))
 		return err
 	}
 
 	switch t {
 	case be_proto.Command | be_proto.MultiCommand:
-		return c.HandleResponse(p)
+		return c.HandleResponse(ctx, p)
 
 	case be_proto.ServerMessage:
-		// Handle MultiCommand
-		return nil
-
+		return c.HandleServerMessage(ctx, p)
 	}
 
 	return nil
 }
 
 // HandleResponse by retrieving the corresponding transmission and updating it
-func (c *Connection) HandleResponse(p be_proto.Packet) error {
+func (c *Connection) HandleResponse(ctx context.Context, p be_proto.Packet) error {
 	s, err := c.Protocol.Sequence(p)
 	if err != nil {
 		return errors.Wrap(err, "handling response")
@@ -89,7 +90,7 @@ func (c *Connection) HandleResponse(p be_proto.Packet) error {
 		case trm.done <- true:
 			return nil
 		case <-time.After(time.Second):
-			// TODO: Add debug log for transmission done timeouts
+			ctx.Debug("timeout on done transmission", zap.Uint32("seq", trm.Key()), zap.String("request", trm.Request()))
 			return nil
 		}
 	}
@@ -98,7 +99,7 @@ func (c *Connection) HandleResponse(p be_proto.Packet) error {
 }
 
 // HandleServerMessage containing chat and events
-func (c *Connection) HandleServerMessage(p be_proto.Packet) error {
+func (c *Connection) HandleServerMessage(ctx context.Context, p be_proto.Packet) error {
 	s, err := c.Protocol.Sequence(p)
 	if err != nil {
 		return errors.Wrap(err, "handling server message")

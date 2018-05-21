@@ -38,55 +38,55 @@ var _ = Describe("Reader", func() {
 		})
 		It("does return nil", func() {
 			pr.TypeReturns(0x12, nil)
-			Expect(con.HandlePacket(nil)).To(BeNil())
+			Expect(con.HandlePacket(ctx, nil)).To(BeNil())
 		})
 		It("should call Verify", func() {
-			con.HandlePacket([]byte(""))
+			con.HandlePacket(ctx, []byte(""))
 			Expect(pr.VerifyCallCount()).To(BeEquivalentTo(1))
 		})
 		It("does call Verify with packet", func() {
-			con.HandlePacket([]byte("test"))
+			con.HandlePacket(ctx, []byte("test"))
 			Expect(pr.VerifyArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error on invalid packet", func() {
 			pr.VerifyReturns(errors.New("test"))
-			Expect(con.HandlePacket(nil)).NotTo(BeNil())
+			Expect(con.HandlePacket(ctx, nil)).NotTo(BeNil())
 		})
 		It("does call Data", func() {
-			con.HandlePacket([]byte(""))
+			con.HandlePacket(ctx, []byte(""))
 			Expect(pr.DataCallCount()).To(BeEquivalentTo(1))
 		})
 		It("should call Data with packet", func() {
-			con.HandlePacket([]byte("test"))
+			con.HandlePacket(ctx, []byte("test"))
 			Expect(pr.DataArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error on corrupt data", func() {
 			pr.DataReturns(nil, errors.New("test"))
-			Expect(con.HandlePacket(nil)).NotTo(BeNil())
+			Expect(con.HandlePacket(ctx, nil)).NotTo(BeNil())
 		})
 		It("does call Type", func() {
-			con.HandlePacket([]byte("test"))
+			con.HandlePacket(ctx, []byte("test"))
 			Expect(pr.TypeCallCount()).To(BeEquivalentTo(1))
 		})
 		It("does call Type with packet", func() {
-			con.HandlePacket([]byte("test"))
+			con.HandlePacket(ctx, []byte("test"))
 			Expect(pr.TypeArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error if Type returns error", func() {
 			pr.TypeReturns(0x00, errors.New("test"))
-			Expect(con.HandlePacket(nil)).NotTo(BeNil())
+			Expect(con.HandlePacket(ctx, nil)).NotTo(BeNil())
 		})
 		Context("when given empty data", func() {
 			It("does increase pingback", func() {
 				pb := con.Pingback()
 				pr.DataReturns([]byte(""), nil)
-				con.HandlePacket([]byte(""))
+				con.HandlePacket(ctx, []byte(""))
 				Expect(con.Pingback()).To(BeNumerically(">", pb))
 			})
 		})
 		It("does return nil when handling ServerMessage", func() {
 			pr.TypeReturns(be_proto.ServerMessage, nil)
-			Expect(con.HandlePacket(nil)).To(BeNil())
+			Expect(con.HandlePacket(ctx, nil)).To(BeNil())
 		})
 	})
 
@@ -103,38 +103,38 @@ var _ = Describe("Reader", func() {
 			pr.MultiReturns(2, 1, false)
 		})
 		It("does not return error", func() {
-			Expect(con.HandleResponse(be_proto.Packet("test"))).To(BeNil())
+			Expect(con.HandleResponse(ctx, be_proto.Packet("test"))).To(BeNil())
 		})
 		It("does return error if no transmission is present", func() {
 			con.AddTransmission(0, nil)
-			Expect(con.HandleResponse(be_proto.Packet("test"))).NotTo(BeNil())
+			Expect(con.HandleResponse(ctx, be_proto.Packet("test"))).NotTo(BeNil())
 		})
 		It("does call Sequence with packet", func() {
-			con.HandleResponse([]byte("test"))
+			con.HandleResponse(ctx, []byte("test"))
 			Expect(pr.SequenceCallCount()).To(BeEquivalentTo(1))
 			Expect(pr.SequenceArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error if Sequence returns error", func() {
 			pr.SequenceReturns(0, errors.New("test"))
-			Expect(con.HandleResponse(nil)).NotTo(BeNil())
+			Expect(con.HandleResponse(ctx, nil)).NotTo(BeNil())
 		})
 		It("does call Type with packet", func() {
-			con.HandleResponse([]byte("test"))
+			con.HandleResponse(ctx, []byte("test"))
 			Expect(pr.TypeCallCount()).To(BeEquivalentTo(1))
 			Expect(pr.TypeArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error if Type returns error", func() {
 			pr.TypeReturns(0x02, errors.New("test"))
-			Expect(con.HandleResponse(nil)).NotTo(BeNil())
+			Expect(con.HandleResponse(ctx, nil)).NotTo(BeNil())
 		})
 		It("does call Data with packet", func() {
-			con.HandleResponse([]byte("test"))
+			con.HandleResponse(ctx, []byte("test"))
 			Expect(pr.DataCallCount()).To(BeEquivalentTo(1))
 			Expect(pr.DataArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error if Data returns error", func() {
 			pr.DataReturns([]byte(""), errors.New("test"))
-			Expect(con.HandleResponse(nil)).NotTo(BeNil())
+			Expect(con.HandleResponse(ctx, nil)).NotTo(BeNil())
 		})
 		Context("on multi command", func() {
 			BeforeEach(func() {
@@ -143,10 +143,10 @@ var _ = Describe("Reader", func() {
 			It("does add correct index to buffer", func() {
 				pr.DataReturns([]byte("test "), nil)
 				pr.MultiReturns(2, 0, false)
-				con.HandleResponse(nil)
+				con.HandleResponse(ctx, nil)
 				pr.DataReturns([]byte("data"), nil)
 				pr.MultiReturns(2, 1, false)
-				con.HandleResponse(nil)
+				con.HandleResponse(ctx, nil)
 				trm := con.GetTransmission(0)
 				Expect(trm.Response()).To(BeEquivalentTo("test data"))
 			})
@@ -157,7 +157,7 @@ var _ = Describe("Reader", func() {
 			})
 			It("does add correct index to buffer", func() {
 				pr.DataReturns([]byte("test data"), nil)
-				con.HandleResponse(nil)
+				con.HandleResponse(ctx, nil)
 				trm := con.GetTransmission(0)
 				Expect(trm.Response()).To(BeEquivalentTo("test data"))
 			})
@@ -168,14 +168,14 @@ var _ = Describe("Reader", func() {
 			go func() {
 				pr.TypeReturns(be_proto.Command, nil)
 				pr.DataReturns([]byte("test data"), nil)
-				con.HandleResponse(nil)
+				con.HandleResponse(ctx, nil)
 			}()
 			Expect(<-trm.Done()).To(BeTrue())
 		})
 		It("does timeout on blocking done channel", func() {
 			trm := be.NewTransmission("test")
 			con.AddTransmission(0, trm)
-			Expect(con.HandleResponse(nil)).To(BeNil())
+			Expect(con.HandleResponse(ctx, nil)).To(BeNil())
 		})
 	})
 
@@ -185,34 +185,34 @@ var _ = Describe("Reader", func() {
 			udp.WriteReturns(0, nil)
 		})
 		It("does return nil", func() {
-			Expect(con.HandleServerMessage(be_proto.Packet("test"))).To(BeNil())
+			Expect(con.HandleServerMessage(ctx, be_proto.Packet("test"))).To(BeNil())
 		})
 		It("does call Sequence with packet", func() {
-			con.HandleServerMessage([]byte("test"))
+			con.HandleServerMessage(ctx, []byte("test"))
 			Expect(pr.SequenceCallCount()).To(BeEquivalentTo(1))
 			Expect(pr.SequenceArgsForCall(0)).To(BeEquivalentTo(be_proto.Packet("test")))
 		})
 		It("does return error if Sequence returns error", func() {
 			pr.SequenceReturns(0, errors.New("test"))
-			Expect(con.HandleServerMessage(nil)).NotTo(BeNil())
+			Expect(con.HandleServerMessage(ctx, nil)).NotTo(BeNil())
 		})
 		It("does send event to channel", func() {
 			c := make(chan *rcon.Event)
 			con.Listen(ctx, c)
-			con.HandleServerMessage([]byte("test"))
+			con.HandleServerMessage(ctx, []byte("test"))
 			event := <-c
 			Expect(event.Message).NotTo(BeEquivalentTo(""))
 		})
 		It("does set correct type when handling chat event", func() {
 			c := make(chan *rcon.Event)
 			con.Listen(ctx, c)
-			con.HandleServerMessage([]byte("(Group) Test"))
+			con.HandleServerMessage(ctx, []byte("(Group) Test"))
 			event := <-c
 			Expect(event.Type).To(BeEquivalentTo(rcon.TypeChat))
 		})
 		It("does return error if UDP.Write fails", func() {
 			udp.WriteReturns(0, errors.New("test"))
-			Expect(con.HandleServerMessage([]byte("test"))).NotTo(BeNil())
+			Expect(con.HandleServerMessage(ctx, []byte("test"))).NotTo(BeNil())
 		})
 	})
 })

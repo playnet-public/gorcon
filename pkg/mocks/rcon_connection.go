@@ -5,31 +5,37 @@ import (
 	"sync"
 
 	"github.com/playnet-public/gorcon/pkg/rcon"
+	context "github.com/seibert-media/golibs/log"
 )
 
 type RconConnection struct {
-	OpenStub        func() error
+	OpenStub        func(context.Context) error
 	openMutex       sync.RWMutex
-	openArgsForCall []struct{}
-	openReturns     struct {
+	openArgsForCall []struct {
+		arg1 context.Context
+	}
+	openReturns struct {
 		result1 error
 	}
 	openReturnsOnCall map[int]struct {
 		result1 error
 	}
-	CloseStub        func() error
+	CloseStub        func(context.Context) error
 	closeMutex       sync.RWMutex
-	closeArgsForCall []struct{}
-	closeReturns     struct {
+	closeArgsForCall []struct {
+		arg1 context.Context
+	}
+	closeReturns struct {
 		result1 error
 	}
 	closeReturnsOnCall map[int]struct {
 		result1 error
 	}
-	WriteStub        func(string) (rcon.Transmission, error)
+	WriteStub        func(context.Context, string) (rcon.Transmission, error)
 	writeMutex       sync.RWMutex
 	writeArgsForCall []struct {
-		arg1 string
+		arg1 context.Context
+		arg2 string
 	}
 	writeReturns struct {
 		result1 rcon.Transmission
@@ -39,23 +45,26 @@ type RconConnection struct {
 		result1 rcon.Transmission
 		result2 error
 	}
-	ListenStub        func(chan *rcon.Event)
+	ListenStub        func(context.Context, chan *rcon.Event)
 	listenMutex       sync.RWMutex
 	listenArgsForCall []struct {
-		arg1 chan *rcon.Event
+		arg1 context.Context
+		arg2 chan *rcon.Event
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RconConnection) Open() error {
+func (fake *RconConnection) Open(arg1 context.Context) error {
 	fake.openMutex.Lock()
 	ret, specificReturn := fake.openReturnsOnCall[len(fake.openArgsForCall)]
-	fake.openArgsForCall = append(fake.openArgsForCall, struct{}{})
-	fake.recordInvocation("Open", []interface{}{})
+	fake.openArgsForCall = append(fake.openArgsForCall, struct {
+		arg1 context.Context
+	}{arg1})
+	fake.recordInvocation("Open", []interface{}{arg1})
 	fake.openMutex.Unlock()
 	if fake.OpenStub != nil {
-		return fake.OpenStub()
+		return fake.OpenStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -67,6 +76,12 @@ func (fake *RconConnection) OpenCallCount() int {
 	fake.openMutex.RLock()
 	defer fake.openMutex.RUnlock()
 	return len(fake.openArgsForCall)
+}
+
+func (fake *RconConnection) OpenArgsForCall(i int) context.Context {
+	fake.openMutex.RLock()
+	defer fake.openMutex.RUnlock()
+	return fake.openArgsForCall[i].arg1
 }
 
 func (fake *RconConnection) OpenReturns(result1 error) {
@@ -88,14 +103,16 @@ func (fake *RconConnection) OpenReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *RconConnection) Close() error {
+func (fake *RconConnection) Close(arg1 context.Context) error {
 	fake.closeMutex.Lock()
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
-	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
-	fake.recordInvocation("Close", []interface{}{})
+	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
+		arg1 context.Context
+	}{arg1})
+	fake.recordInvocation("Close", []interface{}{arg1})
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
-		return fake.CloseStub()
+		return fake.CloseStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -107,6 +124,12 @@ func (fake *RconConnection) CloseCallCount() int {
 	fake.closeMutex.RLock()
 	defer fake.closeMutex.RUnlock()
 	return len(fake.closeArgsForCall)
+}
+
+func (fake *RconConnection) CloseArgsForCall(i int) context.Context {
+	fake.closeMutex.RLock()
+	defer fake.closeMutex.RUnlock()
+	return fake.closeArgsForCall[i].arg1
 }
 
 func (fake *RconConnection) CloseReturns(result1 error) {
@@ -128,16 +151,17 @@ func (fake *RconConnection) CloseReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *RconConnection) Write(arg1 string) (rcon.Transmission, error) {
+func (fake *RconConnection) Write(arg1 context.Context, arg2 string) (rcon.Transmission, error) {
 	fake.writeMutex.Lock()
 	ret, specificReturn := fake.writeReturnsOnCall[len(fake.writeArgsForCall)]
 	fake.writeArgsForCall = append(fake.writeArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("Write", []interface{}{arg1})
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	fake.recordInvocation("Write", []interface{}{arg1, arg2})
 	fake.writeMutex.Unlock()
 	if fake.WriteStub != nil {
-		return fake.WriteStub(arg1)
+		return fake.WriteStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -151,10 +175,10 @@ func (fake *RconConnection) WriteCallCount() int {
 	return len(fake.writeArgsForCall)
 }
 
-func (fake *RconConnection) WriteArgsForCall(i int) string {
+func (fake *RconConnection) WriteArgsForCall(i int) (context.Context, string) {
 	fake.writeMutex.RLock()
 	defer fake.writeMutex.RUnlock()
-	return fake.writeArgsForCall[i].arg1
+	return fake.writeArgsForCall[i].arg1, fake.writeArgsForCall[i].arg2
 }
 
 func (fake *RconConnection) WriteReturns(result1 rcon.Transmission, result2 error) {
@@ -179,15 +203,16 @@ func (fake *RconConnection) WriteReturnsOnCall(i int, result1 rcon.Transmission,
 	}{result1, result2}
 }
 
-func (fake *RconConnection) Listen(arg1 chan *rcon.Event) {
+func (fake *RconConnection) Listen(arg1 context.Context, arg2 chan *rcon.Event) {
 	fake.listenMutex.Lock()
 	fake.listenArgsForCall = append(fake.listenArgsForCall, struct {
-		arg1 chan *rcon.Event
-	}{arg1})
-	fake.recordInvocation("Listen", []interface{}{arg1})
+		arg1 context.Context
+		arg2 chan *rcon.Event
+	}{arg1, arg2})
+	fake.recordInvocation("Listen", []interface{}{arg1, arg2})
 	fake.listenMutex.Unlock()
 	if fake.ListenStub != nil {
-		fake.ListenStub(arg1)
+		fake.ListenStub(arg1, arg2)
 	}
 }
 
@@ -197,10 +222,10 @@ func (fake *RconConnection) ListenCallCount() int {
 	return len(fake.listenArgsForCall)
 }
 
-func (fake *RconConnection) ListenArgsForCall(i int) chan *rcon.Event {
+func (fake *RconConnection) ListenArgsForCall(i int) (context.Context, chan *rcon.Event) {
 	fake.listenMutex.RLock()
 	defer fake.listenMutex.RUnlock()
-	return fake.listenArgsForCall[i].arg1
+	return fake.listenArgsForCall[i].arg1, fake.listenArgsForCall[i].arg2
 }
 
 func (fake *RconConnection) Invocations() map[string][][]interface{} {

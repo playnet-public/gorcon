@@ -1,8 +1,6 @@
 package battleye_test
 
 import (
-	"context"
-
 	"github.com/playnet-public/gorcon/pkg/mocks"
 	"github.com/playnet-public/gorcon/pkg/rcon"
 
@@ -12,6 +10,7 @@ import (
 	be_proto "github.com/playnet-public/battleye/battleye"
 	be_mocks "github.com/playnet-public/battleye/mocks"
 	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
+	context "github.com/seibert-media/golibs/log"
 )
 
 var _ = Describe("Reader", func() {
@@ -19,6 +18,7 @@ var _ = Describe("Reader", func() {
 		con *be.Connection
 		pr  *be_mocks.Protocol
 		udp *mocks.UDPConnection
+		ctx context.Context
 	)
 
 	BeforeEach(func() {
@@ -27,6 +27,7 @@ var _ = Describe("Reader", func() {
 		udp = &mocks.UDPConnection{}
 		con.Protocol = pr
 		con.UDP = udp
+		ctx = context.NewNop()
 	})
 
 	Describe("HandlePacket", func() {
@@ -197,14 +198,14 @@ var _ = Describe("Reader", func() {
 		})
 		It("does send event to channel", func() {
 			c := make(chan *rcon.Event)
-			con.Listen(c)
+			con.Listen(ctx, c)
 			con.HandleServerMessage([]byte("test"))
 			event := <-c
 			Expect(event.Message).NotTo(BeEquivalentTo(""))
 		})
 		It("does set correct type when handling chat event", func() {
 			c := make(chan *rcon.Event)
-			con.Listen(c)
+			con.Listen(ctx, c)
 			con.HandleServerMessage([]byte("(Group) Test"))
 			event := <-c
 			Expect(event.Type).To(BeEquivalentTo(rcon.TypeChat))

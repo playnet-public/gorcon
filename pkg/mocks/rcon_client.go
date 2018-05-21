@@ -5,13 +5,16 @@ import (
 	"sync"
 
 	"github.com/playnet-public/gorcon/pkg/rcon"
+	context "github.com/seibert-media/golibs/log"
 )
 
 type RconClient struct {
-	NewConnectionStub        func() rcon.Connection
+	NewConnectionStub        func(context.Context) rcon.Connection
 	newConnectionMutex       sync.RWMutex
-	newConnectionArgsForCall []struct{}
-	newConnectionReturns     struct {
+	newConnectionArgsForCall []struct {
+		arg1 context.Context
+	}
+	newConnectionReturns struct {
 		result1 rcon.Connection
 	}
 	newConnectionReturnsOnCall map[int]struct {
@@ -21,14 +24,16 @@ type RconClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *RconClient) NewConnection() rcon.Connection {
+func (fake *RconClient) NewConnection(arg1 context.Context) rcon.Connection {
 	fake.newConnectionMutex.Lock()
 	ret, specificReturn := fake.newConnectionReturnsOnCall[len(fake.newConnectionArgsForCall)]
-	fake.newConnectionArgsForCall = append(fake.newConnectionArgsForCall, struct{}{})
-	fake.recordInvocation("NewConnection", []interface{}{})
+	fake.newConnectionArgsForCall = append(fake.newConnectionArgsForCall, struct {
+		arg1 context.Context
+	}{arg1})
+	fake.recordInvocation("NewConnection", []interface{}{arg1})
 	fake.newConnectionMutex.Unlock()
 	if fake.NewConnectionStub != nil {
-		return fake.NewConnectionStub()
+		return fake.NewConnectionStub(arg1)
 	}
 	if specificReturn {
 		return ret.result1
@@ -40,6 +45,12 @@ func (fake *RconClient) NewConnectionCallCount() int {
 	fake.newConnectionMutex.RLock()
 	defer fake.newConnectionMutex.RUnlock()
 	return len(fake.newConnectionArgsForCall)
+}
+
+func (fake *RconClient) NewConnectionArgsForCall(i int) context.Context {
+	fake.newConnectionMutex.RLock()
+	defer fake.newConnectionMutex.RUnlock()
+	return fake.newConnectionArgsForCall[i].arg1
 }
 
 func (fake *RconClient) NewConnectionReturns(result1 rcon.Connection) {

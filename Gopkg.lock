@@ -82,7 +82,7 @@
   branch = "master"
   name = "github.com/seibert-media/golibs"
   packages = ["log"]
-  revision = "1992c9b73f1dd41089e91dafab33df6d8ec93953"
+  revision = "81caf2e014282540d68a8d5597d6cdfd491f8c22"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -118,7 +118,7 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "57065200b4b034a1c8ad54ff77069408c2218ae6"
+  revision = "8e0cdda24ed423affc8f35c241e5e9b16180338e"
 
 [[projects]]
   branch = "master"

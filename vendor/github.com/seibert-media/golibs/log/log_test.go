@@ -15,10 +15,10 @@ func Test_NewDebug(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("ctx is nil")
 	}
-	if ctx.Logger == nil {
+	if ctx.Log() == nil {
 		t.Fatal("logger is nil")
 	}
-	if ctx.Sentry == nil {
+	if ctx.Sentry() == nil {
 		t.Fatal("sentry is nil")
 	}
 	ctx.Debug("test", zap.String("test", "test"), zap.Int("num", 1))
@@ -29,10 +29,10 @@ func Test_NewDebug(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("ctx is nil")
 	}
-	if ctx.Logger == nil {
+	if ctx.Log() == nil {
 		t.Fatal("logger is nil")
 	}
-	if ctx.Sentry == nil {
+	if ctx.Sentry() == nil {
 		t.Fatal("sentry is nil")
 	}
 	ctx.Debug("test", zap.String("test", "test"), zap.Int("num", 1))
@@ -46,10 +46,10 @@ func Test_NewNoDebug(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("ctx is nil")
 	}
-	if ctx.Logger == nil {
+	if ctx.Log() == nil {
 		t.Fatal("logger is nil")
 	}
-	if ctx.Sentry == nil {
+	if ctx.Sentry() == nil {
 		t.Fatal("sentry is nil")
 	}
 	ctx.Debug("test", zap.String("test", "test"), zap.Int("num", 1))
@@ -60,10 +60,10 @@ func Test_NewNoDebug(t *testing.T) {
 	if ctx == nil {
 		t.Fatal("ctx is nil")
 	}
-	if ctx.Logger == nil {
+	if ctx.Log() == nil {
 		t.Fatal("logger is nil")
 	}
-	if ctx.Sentry == nil {
+	if ctx.Sentry() == nil {
 		t.Fatal("sentry is nil")
 	}
 	ctx.Debug("test", zap.String("test", "test"), zap.Int("num", 1))
@@ -92,24 +92,24 @@ func Test_NewInvalidSentryURL(t *testing.T) {
 }
 
 func Test_NewNop(t *testing.T) {
-	ctx := log.NewNop(context.Background())
+	ctx := log.NewNop()
 	if ctx == nil {
 		t.Fatal("ctx is nil")
 	}
-	if ctx.Logger == nil {
+	if ctx.Log() == nil {
 		t.Fatal("logger is nil")
 	}
-	if ctx.Sentry == nil {
+	if ctx.Sentry() == nil {
 		t.Fatal("sentry is nil")
 	}
 	ctx = ctx.WithFields(zap.String("test", "test"), zap.Int("num", 0))
 	if ctx == nil {
 		t.Fatal("ctx is nil")
 	}
-	if ctx.Logger == nil {
+	if ctx.Log() == nil {
 		t.Fatal("logger is nil")
 	}
-	if ctx.Sentry == nil {
+	if ctx.Sentry() == nil {
 		t.Fatal("sentry is nil")
 	}
 	ctx.Debug("test", zap.String("test", "test"), zap.Int("num", 1))

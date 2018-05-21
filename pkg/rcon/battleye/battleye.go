@@ -1,13 +1,15 @@
 package battleye
 
 import (
-	"context"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/pkg/errors"
+	context "github.com/seibert-media/golibs/log"
 	tomb "gopkg.in/tomb.v2"
 
 	be_proto "github.com/playnet-public/battleye/battleye"
@@ -76,7 +78,7 @@ type UDPConnection interface {
 }
 
 // Open the connection
-func (c *Connection) Open() error {
+func (c *Connection) Open(ctx context.Context) error {
 	if c.UDP != nil {
 		return errors.New("connection already open")
 	}
@@ -103,58 +105,62 @@ func (c *Connection) Open() error {
 	if err != nil {
 		return errors.Wrap(err, "login failed")
 	}
-	c.Hold()
+	c.Hold(ctx)
 	return nil
 }
 
 // Hold the connection by sending keepalive packets as required by the battleye protocol
-func (c *Connection) Hold() {
-	c.Tomb.Go(c.WriterLoop)
-	c.Tomb.Go(c.ReaderLoop)
+func (c *Connection) Hold(ctx context.Context) {
+	c.Tomb.Go(c.WriterLoop(ctx))
+	c.Tomb.Go(c.ReaderLoop(ctx))
 }
 
 // WriterLoop for keeping the connection alive
-func (c *Connection) WriterLoop() error {
-	for {
-		select {
-		case <-c.Tomb.Dying():
-			return tomb.ErrDying
-		case <-time.After(time.Second * time.Duration(c.KeepAliveTimeout)):
-			if c.UDP != nil {
-				c.UDP.Write(c.Protocol.BuildKeepAlivePacket(c.Sequence()))
-				c.AddKeepAlive()
-				continue
+func (c *Connection) WriterLoop(ctx context.Context) func() error {
+	return func() error {
+		for {
+			select {
+			case <-c.Tomb.Dying():
+				return tomb.ErrDying
+			case <-time.After(time.Second * time.Duration(c.KeepAliveTimeout)):
+				if c.UDP != nil {
+					c.UDP.Write(c.Protocol.BuildKeepAlivePacket(c.Sequence()))
+					c.AddKeepAlive()
+					continue
+				}
+				return errors.New("udp connection must not be nil")
 			}
-			return errors.New("udp connection must not be nil")
 		}
 	}
 }
 
 // ReaderLoop for keeping the connection alive
-func (c *Connection) ReaderLoop() error {
-	for {
-		select {
-		case <-c.Tomb.Dying():
-			return tomb.ErrDying
-		default:
-			if c.UDP != nil {
-				buf := make([]byte, 4096)
-				_, err := c.UDP.Read(buf)
-				if err, ok := err.(net.Error); ok && err.Timeout() {
-					// TODO: add debug logging here
-					continue
+func (c *Connection) ReaderLoop(ctx context.Context) func() error {
+	return func() error {
+		for {
+			select {
+			case <-c.Tomb.Dying():
+				return tomb.ErrDying
+			default:
+				if c.UDP != nil {
+					buf := make([]byte, 4096)
+					_, err := c.UDP.Read(buf)
+					if err, ok := err.(net.Error); ok && err.Timeout() {
+						ctx.Debug("timeout", zap.Error(err))
+						continue
+					}
+					if err != nil {
+						return errors.Wrap(err, "reading udp failed")
+					}
 				}
-				if err != nil {
-					return errors.Wrap(err, "reading udp failed")
-				}
+				return errors.New("udp connection must not be nil")
 			}
-			return errors.New("udp connection must not be nil")
 		}
 	}
 }
 
 // Close the connection for graceful shutdown or reconnect
-func (c *Connection) Close() error {
+func (c *Connection) Close(ctx context.Context) error {
 	c.Tomb.Kill(errors.New("SIGCLOSE"))
 	c.Tomb.Wait()
 	if c.UDP == nil {
@@ -169,7 +175,7 @@ func (c *Connection) Close() error {
 }
 
 // Write a command to the connection
-func (c *Connection) Write(cmd string) (rcon.Transmission, error) {
+func (c *Connection) Write(ctx context.Context, cmd string) (rcon.Transmission, error) {
 	if c.UDP == nil {
 		return nil, errors.New("udp connection must not be nil")
 	}
@@ -185,7 +191,7 @@ func (c *Connection) Write(cmd string) (rcon.Transmission, error) {
 }
 
 // Listen for events on the connection.
-func (c *Connection) Listen(to chan *rcon.Event) {
+func (c *Connection) Listen(ctx context.Context, to chan *rcon.Event) {
 	c.listenersMutex.Lock()
 	defer c.listenersMutex.Unlock()
 	c.listeners = append(c.listeners, to)

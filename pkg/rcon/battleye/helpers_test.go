@@ -1,11 +1,10 @@
 package battleye_test
 
 import (
-	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
+	context "github.com/seibert-media/golibs/log"
 )
 
 var _ = Describe("Connection Helpers", func() {

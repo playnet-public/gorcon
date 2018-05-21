@@ -13,11 +13,35 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Context implements context.Context while adding our own logging and tracing functionality
-type Context struct {
+// Context is meant to replace context.Context while adding our own logging and tracing functionality
+type Context interface {
+	context.Context
+
+	WithFields(fields ...zapcore.Field) Context
+	WithValue(key, val interface{}) Context
+	WithCancel() (Context, context.CancelFunc)
+	WithDeadline(d time.Time) (Context, context.CancelFunc)
+	WithTimeout(d time.Duration) (Context, context.CancelFunc)
+
+	Ctx() context.Context
+	SetCtx(to context.Context)
+	Log() *zap.Logger
+	SetLogger(to *zap.Logger)
+	Sentry() *raven.Client
+
+	Debug(msg string, fields ...zap.Field)
+	Info(msg string, fields ...zap.Field)
+	Warn(msg string, fields ...zap.Field)
+	Error(msg string, fields ...zap.Field)
+	Fatal(msg string, fields ...zap.Field)
+	Sync() error
+}
+
+// Logger implements Context
+type Logger struct {
 	context.Context
 	*zap.Logger
-	Sentry *raven.Client
+	SentryClient *raven.Client
 
 	dsn   string
 	debug bool
@@ -26,7 +50,7 @@ type Context struct {
 // New Context with included logger and sentry instances
 // This initializes a new empty context using context.Background()
 // To use a custom context call NewWithCustom(...)
-func New(dsn string, debug bool) *Context {
+func New(dsn string, debug bool) Context {
 	sentry, err := raven.New(dsn)
 	if err != nil {
 		panic(err)
@@ -34,10 +58,10 @@ func New(dsn string, debug bool) *Context {
 
 	logger := buildLogger(sentry, debug)
 
-	return &Context{
-		Context: context.Background(),
-		Logger:  logger,
-		Sentry:  sentry,
+	return &Logger{
+		Context:      context.Background(),
+		Logger:       logger,
+		SentryClient: sentry,
 
 		dsn:   dsn,
 		debug: debug,
@@ -46,7 +70,7 @@ func New(dsn string, debug bool) *Context {
 
 // NewWithCustom Context does what New(...) does but uses the provided context
 // instead of initializing a new one
-func NewWithCustom(ctx context.Context, dsn string, debug bool) *Context {
+func NewWithCustom(ctx context.Context, dsn string, debug bool) Context {
 	sentry, err := raven.New(dsn)
 	if err != nil {
 		panic(err)
@@ -54,10 +78,10 @@ func NewWithCustom(ctx context.Context, dsn string, debug bool) *Context {
 
 	logger := buildLogger(sentry, debug)
 
-	return &Context{
-		Context: ctx,
-		Logger:  logger,
-		Sentry:  sentry,
+	return &Logger{
+		Context:      ctx,
+		Logger:       logger,
+		SentryClient: sentry,
 
 		dsn:   dsn,
 		debug: debug,
@@ -66,91 +90,116 @@ func NewWithCustom(ctx context.Context, dsn string, debug bool) *Context {
 
 // Background does what context.Background would do
 // but initializes empty logger and sentry clients
-func Background() *Context {
+func Background() Context {
 	sentry, _ := raven.New("")
 	logger := zap.NewNop()
 
-	log := &Context{
-		Context: context.Background(),
-		Logger:  logger,
-		Sentry:  sentry,
+	log := &Logger{
+		Context:      context.Background(),
+		Logger:       logger,
+		SentryClient: sentry,
 	}
 
 	return log
 }
 
 // NewNop returns Context with empty logging and tracing
-func NewNop(ctx context.Context) *Context {
+func NewNop() Context {
 	sentry, _ := raven.New("")
 	logger := zap.NewNop()
 
-	log := &Context{
-		Context: ctx,
-		Logger:  logger,
-		Sentry:  sentry,
+	log := &Logger{
+		Context:      context.Background(),
+		Logger:       logger,
+		SentryClient: sentry,
 	}
 
 	return log
 }
 
+// Ctx returns the actual context inside Logger
+func (c *Logger) Ctx() context.Context {
+	return c.Context
+}
+
+// SetCtx overwrites the actual context inside Logger
+func (c *Logger) SetCtx(to context.Context) {
+	c.Context = to
+}
+
+// Log returns the actual Logger
+func (c *Logger) Log() *zap.Logger {
+	return c.Logger
+}
+
+// SetLogger overwrites the actual Logger
+func (c *Logger) SetLogger(to *zap.Logger) {
+	c.Logger = to
+}
+
+// Sentry returns the actual sentry client inside Logger
+func (c *Logger) Sentry() *raven.Client {
+	return c.SentryClient
+}
+
 // WithFields wrapper around zap.With
-func (c *Context) WithFields(fields ...zapcore.Field) *Context {
-	l := NewWithCustom(c.Context, c.dsn, c.debug)
-	l.Logger = l.Logger.With(fields...)
+func (c *Logger) WithFields(fields ...zapcore.Field) Context {
+	l := NewWithCustom(c.Ctx(), c.dsn, c.debug)
+	l.SetLogger(c.Log().With(fields...))
 	return l
 }
 
 // WithValue is meant to replace context.WithValue as we can not provide compatibility with it
-func (c *Context) WithValue(key, val interface{}) *Context {
-	c.Context = context.WithValue(c.Context, key, val)
+func (c *Logger) WithValue(key, val interface{}) Context {
+	c.SetCtx(context.WithValue(c.Ctx(), key, val))
 	return c
 }
 
 // WithCancel is meant to replace context.WithCancel as we can not provide compatibility with it
-func (c *Context) WithCancel() (*Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(c.Context)
-	c.Context = ctx
+func (c *Logger) WithCancel() (Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(c.Ctx())
+	c.SetCtx(ctx)
 	return c, cancel
 }
 
 // WithDeadline is meant to replace context.WithDeadline as we can not provide compatibility with it
-func (c *Context) WithDeadline(d time.Time) (*Context, context.CancelFunc) {
-	ctx, cancel := context.WithDeadline(c.Context, d)
-	c.Context = ctx
+func (c *Logger) WithDeadline(d time.Time) (Context, context.CancelFunc) {
+	ctx, cancel := context.WithDeadline(c.Ctx(), d)
+	c.SetCtx(ctx)
 	return c, cancel
 }
 
 // WithTimeout is meant to replace context.WithTimeout as we can not provide compatibility with it
-func (c *Context) WithTimeout(d time.Duration) (*Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(c.Context, d)
-	c.Context = ctx
+func (c *Logger) WithTimeout(d time.Duration) (Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(c.Ctx(), d)
+	c.SetCtx(ctx)
 	return c, cancel
 }
 
 // WithValue is meant to replace context.WithValue
-func WithValue(c *Context, key, val interface{}) *Context {
-	c.Context = context.WithValue(c.Context, key, val)
+func WithValue(c Context, key, val interface{}) Context {
+	c.SetCtx(context.WithValue(c.Ctx(), key, val))
 	return c
 }
 
 // WithCancel is meant to replace context.WithCancel
-func WithCancel(c *Context) (*Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(c.Context)
-	c.Context = ctx
+func WithCancel(c Context) (Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(c.Ctx())
+	c.SetCtx(ctx)
 	return c, cancel
 }
 
 // WithDeadline is meant to replace context.WithDeadline
-func WithDeadline(c *Context, d time.Time) (*Context, context.CancelFunc) {
-	ctx, cancel := context.WithDeadline(c.Context, d)
-	c.Context = ctx
+func WithDeadline(c Context, d time.Time) (Context, context.CancelFunc) {
+	ctx, cancel := context.WithDeadline(c.Ctx(), d)
+	c.SetCtx(ctx)
 	return c, cancel
 }
 
 // WithTimeout is meant to replace context.WithTimeout
-func WithTimeout(c *Context, d time.Duration) (*Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(c.Context, d)
-	c.Context = ctx
+func WithTimeout(c Context, d time.Duration) (Context, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(c.Ctx(), d)
+	c.SetCtx(ctx)
 	return c, cancel
 }
 

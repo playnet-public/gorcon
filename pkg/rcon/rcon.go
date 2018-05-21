@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	context "github.com/seibert-media/golibs/log"
 )
 
 // Rcon is the wrapper around the rcon connection interface
@@ -20,19 +21,19 @@ type Rcon struct {
 //go:generate counterfeiter -o ../mocks/rcon_connection.go --fake-name RconConnection . Connection
 type Connection interface {
 	// Open the connection
-	Open() error
+	Open(context.Context) error
 	// Close the connection for graceful shutdown or reconnect
-	Close() error
+	Close(context.Context) error
 	// Write a command to the connection and return the resulting transmission
-	Write(string) (Transmission, error)
+	Write(context.Context, string) (Transmission, error)
 	// Listen for events on the connection.
-	Listen(chan *Event)
+	Listen(context.Context, chan *Event)
 }
 
 // Client is the interface for specific rcon implementations which provides connections or acts as connection pool
 //go:generate counterfeiter -o ../mocks/rcon_client.go --fake-name RconClient . Client
 type Client interface {
-	NewConnection() Connection
+	NewConnection(context.Context) Connection
 }
 
 // Transmission is the interface describing rcon commands and their respective response.
@@ -59,45 +60,45 @@ var TypeEvent byte = 0x00
 var TypeChat byte = 0x01
 
 // Connect to rcon server
-func (r *Rcon) Connect() error {
+func (r *Rcon) Connect(ctx context.Context) error {
 	if r.Client == nil {
 		return errors.New("client must not be nil")
 	}
 	if r.Con != nil {
 		return errors.New("connection already present")
 	}
-	r.Con = r.Client.NewConnection()
+	r.Con = r.Client.NewConnection(ctx)
 	if r.Con == nil {
 		return errors.New("client returned nil connection")
 	}
 	r.m.Lock()
 	defer r.m.Unlock()
-	return r.Con.Open()
+	return r.Con.Open(ctx)
 }
 
 // Reconnect to rcon server. This tries to gracefully close the current connection and then replace it with a new one
 // A failing close will not stop the reconnection process for now
-func (r *Rcon) Reconnect() error {
+func (r *Rcon) Reconnect(ctx context.Context) error {
 	if r.Client == nil {
 		return errors.New("client must not be nil")
 	}
-	r.Con.Close()
-	r.Con = r.Client.NewConnection()
+	r.Con.Close(ctx)
+	r.Con = r.Client.NewConnection(ctx)
 	if r.Con == nil {
 		return errors.New("client returned nil connection")
 	}
 	r.m.Lock()
 	defer r.m.Unlock()
-	return r.Con.Open()
+	return r.Con.Open(ctx)
 }
 
 // Disconnect from rcon. This tries to gracefully close the current connection and resets the local Connection internally
 // A failing close will result in an error
-func (r *Rcon) Disconnect() error {
+func (r *Rcon) Disconnect(ctx context.Context) error {
 	if r.Con == nil {
 		return errors.New("connection already nil")
 	}
-	err := r.Con.Close()
+	err := r.Con.Close(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to close current connection")
 	}

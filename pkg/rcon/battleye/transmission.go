@@ -44,7 +44,7 @@ func (t *Transmission) Done() <-chan bool {
 // Response returns the final response
 // Checking if the transmission is done before retrieving is suggested
 // Otherwise this might render the transaction useless caused by the way multiResponsePackets get handled
-// TODO: If this might as well be done for every call
+// TODO: Evaluate if this might as well be done for every call (no caching)
 func (t *Transmission) Response() string {
 	if len(t.response) < 1 {
 		// Sort the responses stored in buffer

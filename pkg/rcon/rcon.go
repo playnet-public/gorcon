@@ -76,6 +76,16 @@ func (r *Rcon) Connect(ctx context.Context) error {
 	return r.Con.Open(ctx)
 }
 
+// Write to rcon server
+func (r *Rcon) Write(ctx context.Context, cmd string) (Transmission, error) {
+	r.m.Lock()
+	defer r.m.Unlock()
+	if r.Con == nil {
+		return nil, errors.New("connection must not be nil")
+	}
+	return r.Con.Write(ctx, cmd)
+}
+
 // Reconnect to rcon server. This tries to gracefully close the current connection and then replace it with a new one
 // A failing close will not stop the reconnection process for now
 func (r *Rcon) Reconnect(ctx context.Context) error {

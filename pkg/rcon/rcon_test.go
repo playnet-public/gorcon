@@ -70,6 +70,21 @@ var _ = Describe("Rcon", func() {
 		})
 	})
 
+	Describe("Write", func() {
+		BeforeEach(func() {
+			r.Con = mockConnection
+		})
+		It("does return error on nil connection", func() {
+			r.Con = nil
+			_, err := r.Write(ctx, "")
+			Expect(err).NotTo(BeNil())
+		})
+		It("does call Write on connection", func() {
+			r.Write(ctx, "")
+			Expect(mockConnection.WriteCallCount()).To(BeEquivalentTo(1))
+		})
+	})
+
 	Describe("Reconnect", func() {
 		BeforeEach(func() {
 			r.Con = mockConnection

@@ -80,7 +80,7 @@ var _ = Describe("Watcher", func() {
 				select {
 				case <-c2:
 					Fail("should not receive on c2")
-				case <-time.After(1 * time.Second):
+				case <-time.After(500 * time.Millisecond):
 					Expect(true).To(BeTrue())
 				}
 				close(done)
@@ -88,7 +88,7 @@ var _ = Describe("Watcher", func() {
 			go func() {
 				Expect(<-c3).NotTo(BeNil())
 			}()
-			time.Sleep(500 * time.Microsecond)
+			time.Sleep(100 * time.Microsecond)
 			w.subscriptionsMutex.RLock()
 			defer w.subscriptionsMutex.RUnlock()
 			for _, l := range w.subscriptions {

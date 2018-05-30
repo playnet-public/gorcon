@@ -120,7 +120,7 @@ func (c *Connection) HandleServerMessage(ctx context.Context, p be_proto.Packet)
 	event := &rcon.Event{
 		Timestamp: time.Now(),
 		Type:      t,
-		Message:   string(p),
+		Payload:   string(p),
 	}
 
 	_, err = c.UDP.Write(c.Protocol.BuildMsgAckPacket(s))
@@ -128,9 +128,9 @@ func (c *Connection) HandleServerMessage(ctx context.Context, p be_proto.Packet)
 		return errors.Wrap(err, "handling server message")
 	}
 
-	c.listenersMutex.RLock()
-	defer c.listenersMutex.RUnlock()
-	for _, l := range c.listeners {
+	c.subscriptionsMutex.RLock()
+	defer c.subscriptionsMutex.RUnlock()
+	for _, l := range c.subscriptions {
 		go func(l chan *rcon.Event) { l <- event }(l)
 	}
 

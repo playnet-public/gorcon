@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/playnet-public/gorcon/pkg/mocks"
-	"github.com/playnet-public/gorcon/pkg/rcon"
 	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
 	context "github.com/seibert-media/golibs/log"
 )
@@ -257,13 +256,6 @@ var _ = Describe("Connection", func() {
 		It("does add transmission to connection at write", func() {
 			con.Write(ctx, "test")
 			Expect(con.GetTransmission(1)).NotTo(BeNil())
-		})
-	})
-
-	Describe("Listen", func() {
-		It("does not return error", func() {
-			ch := make(chan *rcon.Event)
-			con.Listen(ctx, ch)
 		})
 	})
 })

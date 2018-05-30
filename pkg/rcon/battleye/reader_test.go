@@ -198,14 +198,14 @@ var _ = Describe("Reader", func() {
 		})
 		It("does send event to channel", func() {
 			c := make(chan *rcon.Event)
-			con.Listen(ctx, c)
+			con.Subscribe(ctx, c)
 			con.HandleServerMessage(ctx, []byte("test"))
 			event := <-c
-			Expect(event.Message).NotTo(BeEquivalentTo(""))
+			Expect(event.Payload).NotTo(BeEquivalentTo(""))
 		})
 		It("does set correct type when handling chat event", func() {
 			c := make(chan *rcon.Event)
-			con.Listen(ctx, c)
+			con.Subscribe(ctx, c)
 			con.HandleServerMessage(ctx, []byte("(Group) Test"))
 			event := <-c
 			Expect(event.Type).To(BeEquivalentTo(rcon.TypeChat))

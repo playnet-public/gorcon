@@ -27,7 +27,7 @@ type Connection interface {
 	// Write a command to the connection and return the resulting transmission
 	Write(context.Context, string) (Transmission, error)
 	// Listen for events on the connection.
-	Listen(context.Context, chan *Event)
+	Subscribe(context.Context, chan *Event)
 }
 
 // Client is the interface for specific rcon implementations which provides connections or acts as connection pool
@@ -50,7 +50,7 @@ type Transmission interface {
 type Event struct {
 	Timestamp time.Time
 	Type      byte
-	Message   string
+	Payload   string
 }
 
 // TypeEvent identifies default rcon events

@@ -41,8 +41,8 @@ type Connection struct {
 	transmissions       map[be_proto.Sequence]*Transmission
 	transmissionsMutext sync.RWMutex
 
-	listeners      []chan *rcon.Event
-	listenersMutex sync.RWMutex
+	subscriptions      []chan *rcon.Event
+	subscriptionsMutex sync.RWMutex
 
 	Tomb *tomb.Tomb
 }
@@ -50,8 +50,8 @@ type Connection struct {
 // NewConnection from the passed in configuration
 func NewConnection(ctx context.Context) *Connection {
 	c := &Connection{
-		Protocol:  be_proto.New(),
-		listeners: []chan *rcon.Event{},
+		Protocol:      be_proto.New(),
+		subscriptions: []chan *rcon.Event{},
 	}
 	atomic.StoreUint32(&c.seq, 0)
 	atomic.StoreInt64(&c.keepAliveCount, 0)
@@ -191,9 +191,21 @@ func (c *Connection) Write(ctx context.Context, cmd string) (rcon.Transmission, 
 	return trm, nil
 }
 
-// Listen for events on the connection.
-func (c *Connection) Listen(ctx context.Context, to chan *rcon.Event) {
-	c.listenersMutex.Lock()
-	defer c.listenersMutex.Unlock()
-	c.listeners = append(c.listeners, to)
+// Subscribe for events on the connection until the context ends
+func (c *Connection) Subscribe(ctx context.Context, to chan *rcon.Event) {
+	c.subscriptionsMutex.Lock()
+	defer c.subscriptionsMutex.Unlock()
+	c.subscriptions = append(c.subscriptions, to)
+	go func() {
+		<-ctx.Done()
+		c.subscriptionsMutex.Lock()
+		defer c.subscriptionsMutex.Unlock()
+		for i, s := range c.subscriptions {
+			if s == to {
+				c.subscriptions[i] = c.subscriptions[len(c.subscriptions)-1]
+				c.subscriptions[len(c.subscriptions)-1] = nil
+				c.subscriptions = c.subscriptions[:len(c.subscriptions)-1]
+			}
+		}
+	}()
 }

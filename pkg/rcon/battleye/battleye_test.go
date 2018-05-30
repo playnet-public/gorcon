@@ -119,7 +119,7 @@ var _ = Describe("Connection", func() {
 		})
 		It("does call read after sending login", func() {
 			con.Open(ctx)
-			Expect(udp.ReadCallCount()).To(BeEquivalentTo(1))
+			Expect(udp.ReadCallCount()).To(BeNumerically(">", 0))
 		})
 		It("does return error if reading from udp fails", func() {
 			udp.ReadReturns(0, errors.New("test"))

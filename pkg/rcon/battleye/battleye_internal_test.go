@@ -86,7 +86,7 @@ var _ = Describe("Connection", func() {
 				select {
 				case <-c2:
 					Fail("should not receive on c2")
-				case <-time.After(100 * time.Millisecond):
+				case <-time.After(500 * time.Millisecond):
 					Expect(true).To(BeTrue())
 				}
 				close(done)

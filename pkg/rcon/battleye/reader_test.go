@@ -32,9 +32,11 @@ var _ = Describe("Reader", func() {
 
 	Describe("HandlePacket", func() {
 		BeforeEach(func() {
+			pr = &be_mocks.Protocol{}
 			pr.VerifyReturns(nil)
 			pr.DataReturns([]byte("test"), nil)
 			pr.TypeReturns(be_proto.Command, nil)
+			con.Protocol = pr
 		})
 		It("does return nil", func() {
 			pr.TypeReturns(0x12, nil)

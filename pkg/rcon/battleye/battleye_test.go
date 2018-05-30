@@ -64,7 +64,12 @@ var _ = Describe("Connection", func() {
 
 	Describe("Open", func() {
 		BeforeEach(func() {
+			con = be.NewConnection(ctx)
+			con.Dialer = dial
+			con.Protocol = proto
 			con.Password = "test"
+			udp = &mocks.UDPConnection{}
+			dial.DialUDPReturns(udp, nil)
 			proto.VerifyLoginReturns(nil)
 		})
 		It("does not return error", func() {

@@ -1,7 +1,6 @@
 package battleye
 
 import (
-	"testing"
 	"time"
 
 	be_mocks "github.com/playnet-public/battleye/mocks"
@@ -11,11 +10,6 @@ import (
 	"github.com/playnet-public/gorcon/pkg/rcon"
 	context "github.com/seibert-media/golibs/log"
 )
-
-func TestBattlEye(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "BattlEye Internal Suite")
-}
 
 var _ = Describe("Connection", func() {
 	var (
@@ -34,6 +28,7 @@ var _ = Describe("Connection", func() {
 	Describe("Subscribe", func() {
 		BeforeEach(func() {
 			con = NewConnection(ctx)
+			ctx = context.NewNop()
 		})
 		It("does add subscription on Listen", func() {
 			l := len(con.subscriptions)
@@ -57,7 +52,7 @@ var _ = Describe("Connection", func() {
 			Expect(len(con.subscriptions)).To(BeEquivalentTo(l))
 			con.subscriptionsMutex.RUnlock()
 		})
-		It("does remove the correct subscription on closed context", func() {
+		It("does remove the correct subscription on closed context", func(done Done) {
 			ctx, _ := context.WithCancel(ctx)
 			c1 := make(chan *rcon.Event)
 			c2 := make(chan *rcon.Event)
@@ -77,27 +72,34 @@ var _ = Describe("Connection", func() {
 				Expect(<-c3).NotTo(BeNil())
 			}()
 			e := &rcon.Event{}
-			c1 <- e
-			c2 <- e
-			c3 <- e
+			con.subscriptionsMutex.RLock()
+			defer con.subscriptionsMutex.RUnlock()
+			for _, l := range con.subscriptions {
+				go func(l chan *rcon.Event) { l <- e }(l)
+			}
 			close2()
 			go func() {
 				Expect(<-c1).NotTo(BeNil())
 			}()
 			go func() {
+				defer GinkgoRecover()
 				select {
-				case ev := <-c2:
-					Expect(ev).To(BeNil())
+				case <-c2:
+					Fail("should not receive on c2")
 				case <-time.After(100 * time.Millisecond):
 					Expect(true).To(BeTrue())
 				}
+				close(done)
 			}()
 			go func() {
 				Expect(<-c3).NotTo(BeNil())
 			}()
-			c1 <- e
-			go func() { c2 <- e }()
-			c3 <- e
+			time.Sleep(100 * time.Microsecond)
+			con.subscriptionsMutex.RLock()
+			defer con.subscriptionsMutex.RUnlock()
+			for _, l := range con.subscriptions {
+				go func(l chan *rcon.Event) { l <- e }(l)
+			}
 		})
 	})
 })

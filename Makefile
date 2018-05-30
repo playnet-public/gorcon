@@ -45,7 +45,6 @@ all: test install run
 deps:
 	go get -u github.com/golang/dep/cmd/dep
 	go get -u github.com/golang/lint/golint
-	go get -u github.com/haya14busa/goverage
 	go get -u github.com/kisielk/errcheck
 	go get -u github.com/maxbrunsfeld/counterfeiter
 	go get -u github.com/onsi/ginkgo/ginkgo
@@ -136,9 +135,10 @@ errcheck:
 	@errcheck -ignore '(Close|Write)' $(shell go list ./... | grep -v /vendor/)
 
 cover:
-	@go get github.com/haya14busa/goverage
+	@go get github.com/onsi/ginkgo/ginkgo
+	@go get github.com/onsi/gomega
 	@go get github.com/schrej/godacov
-	goverage -v -coverprofile=coverage.out $(shell go list ./... | grep -v /vendor/)
+	@ginkgo -r -race -p -coverprofile=coverage.out -outputdir=./
 
 generate:
 	@go get github.com/maxbrunsfeld/counterfeiter

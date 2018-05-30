@@ -165,7 +165,7 @@ var _ = Describe("Watcher", func() {
 			w.Tomb.Go(w.OutputHandler(re, "test"))
 			c := make(chan *watcher.Event)
 			w.Subscribe(ctx, c)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			wr.Write([]byte(fmt.Sprintln("testLine1")))
 			ev := <-c
 			Expect(ev.Type).To(BeEquivalentTo("test"))
@@ -176,7 +176,7 @@ var _ = Describe("Watcher", func() {
 			w.Tomb.Go(w.OutputHandler(re, "test"))
 			c := make(chan *watcher.Event)
 			w.Subscribe(ctx, c)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(500 * time.Millisecond)
 			wr.Write([]byte(fmt.Sprintln("testLine1")))
 			ev := <-c
 			Expect(ev.Type).To(BeEquivalentTo("test"))

@@ -58,7 +58,7 @@ gotest:
 
 test:
 	@go get github.com/onsi/ginkgo/ginkgo
-	@ginkgo -r -race -p -coverprofile=coverage.out -outputdir=./
+	@ginkgo -r -race -p -nodes=7 -coverprofile=coverage.out -outputdir=./
 
 # install passed in tool project
 install:

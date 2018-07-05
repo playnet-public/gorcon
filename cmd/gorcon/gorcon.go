@@ -5,12 +5,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"runtime"
 
 	"github.com/kolide/kit/version"
-	context "github.com/seibert-media/golibs/log"
+	"github.com/seibert-media/golibs/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -49,9 +50,12 @@ func main() {
 		}
 	}
 
-	ctx := context.New(*sentryDsn, *dbg).WithFields(zapFields...)
-	defer ctx.Sync()
-	ctx.Info("preparing")
+	logger := log.New(*sentryDsn, *dbg).WithFields(zapFields...)
+	defer logger.Sync()
 
-	ctx.Info("finished")
+	ctx := log.WithLogger(context.Background(), logger)
+
+	log.From(ctx).Info("preparing")
+
+	log.From(ctx).Info("finished")
 }

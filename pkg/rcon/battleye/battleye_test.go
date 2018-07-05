@@ -1,6 +1,7 @@
 package battleye_test
 
 import (
+	"context"
 	"errors"
 	"net"
 	"testing"
@@ -15,7 +16,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/playnet-public/gorcon/pkg/mocks"
 	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
-	context "github.com/seibert-media/golibs/log"
 )
 
 func TestBattlEye(t *testing.T) {
@@ -31,7 +31,7 @@ var _ = Describe("Client", func() {
 
 	BeforeEach(func() {
 		c = &be.Client{}
-		ctx = context.NewNop()
+		ctx = context.Background()
 	})
 
 	Describe("NewConnection", func() {
@@ -53,7 +53,7 @@ var _ = Describe("Connection", func() {
 	BeforeEach(func() {
 		dial = &mocks.UDPDialer{}
 		proto = &be_mocks.Protocol{}
-		ctx = context.NewNop()
+		ctx = context.Background()
 		con = be.NewConnection(ctx)
 		con.Dialer = dial
 		con.Protocol = proto

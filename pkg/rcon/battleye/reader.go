@@ -1,6 +1,7 @@
 package battleye
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 	be_proto "github.com/playnet-public/battleye/battleye"
 	"github.com/playnet-public/gorcon/pkg/rcon"
-	context "github.com/seibert-media/golibs/log"
+	"github.com/seibert-media/golibs/log"
 )
 
 // HandlePacket received from UDP connection
@@ -19,25 +20,25 @@ func (c *Connection) HandlePacket(ctx context.Context, p be_proto.Packet) (err e
 	}()
 	err = c.Protocol.Verify(p)
 	if err != nil {
-		ctx.Error("handling packet", zap.Error(err))
+		log.From(ctx).Error("handling packet", zap.Error(err))
 		return err
 	}
 	data, err := c.Protocol.Data(p)
 	if err != nil {
-		ctx.Error("handling packet", zap.Error(err))
+		log.From(ctx).Error("handling packet", zap.Error(err))
 		return err
 	}
 
 	// Handle KeepAlive Pingback
 	if len(data) < 1 {
 		c.AddPingback()
-		ctx.Debug("pingback", zap.Int64("count", c.Pingback()))
+		log.From(ctx).Debug("pingback", zap.Int64("count", c.Pingback()))
 		return nil
 	}
 
 	t, err := c.Protocol.Type(p)
 	if err != nil {
-		ctx.Error("handling packet", zap.Error(err))
+		log.From(ctx).Error("handling packet", zap.Error(err))
 		return err
 	}
 
@@ -90,7 +91,7 @@ func (c *Connection) HandleResponse(ctx context.Context, p be_proto.Packet) erro
 		case trm.done <- true:
 			return nil
 		case <-time.After(time.Second):
-			ctx.Debug("timeout on done transmission", zap.Uint32("seq", trm.Key()), zap.String("request", trm.Request()))
+			log.From(ctx).Debug("timeout on done transmission", zap.Uint32("seq", trm.Key()), zap.String("request", trm.Request()))
 			return nil
 		}
 	}

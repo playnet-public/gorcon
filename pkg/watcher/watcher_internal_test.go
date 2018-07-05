@@ -1,11 +1,11 @@
 package watcher
 
 import (
+	"context"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	context "github.com/seibert-media/golibs/log"
 )
 
 var _ = Describe("Watcher", func() {
@@ -15,14 +15,14 @@ var _ = Describe("Watcher", func() {
 	)
 
 	BeforeEach(func() {
-		ctx = context.NewNop()
+		ctx = context.Background()
 		w = &Watcher{}
 	})
 
 	Describe("Subscribe", func() {
 		BeforeEach(func() {
 			w = &Watcher{}
-			ctx = context.NewNop()
+			ctx = context.Background()
 		})
 		It("does add subscription on Listen", func() {
 			l := len(w.subscriptions)

@@ -1,6 +1,7 @@
 package battleye
 
 import (
+	"context"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -9,7 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
-	context "github.com/seibert-media/golibs/log"
+	"github.com/seibert-media/golibs/log"
 	tomb "gopkg.in/tomb.v2"
 
 	be_proto "github.com/playnet-public/battleye/battleye"
@@ -146,7 +147,7 @@ func (c *Connection) ReaderLoop(ctx context.Context) func() error {
 					buf := make([]byte, 4096)
 					_, err := c.UDP.Read(buf)
 					if err, ok := err.(net.Error); ok && err.Timeout() {
-						ctx.Debug("timeout", zap.Error(err))
+						log.From(ctx).Debug("timeout", zap.Error(err))
 						continue
 					}
 					if err != nil {

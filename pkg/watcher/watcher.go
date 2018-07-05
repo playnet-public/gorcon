@@ -2,14 +2,13 @@ package watcher
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"io"
 	"sync"
 	"time"
 
 	"gopkg.in/tomb.v2"
-
-	context "github.com/seibert-media/golibs/log"
 )
 
 // Watcher is responsible for starting and keeping a process alive

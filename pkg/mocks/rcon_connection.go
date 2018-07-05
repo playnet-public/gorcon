@@ -2,10 +2,10 @@
 package mocks
 
 import (
+	"context"
 	"sync"
 
 	"github.com/playnet-public/gorcon/pkg/rcon"
-	context "github.com/seibert-media/golibs/log"
 )
 
 type RconConnection struct {

@@ -2,11 +2,11 @@
 package rcon
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	context "github.com/seibert-media/golibs/log"
 )
 
 // Rcon is the wrapper around the rcon connection interface

@@ -12,3 +12,7 @@ type Process interface {
 	Wait() error
 	Stop() error
 }
+
+// OSProcess implements process using default os processes
+type OSProcess struct {
+}

@@ -1,6 +1,7 @@
 package battleye
 
 import (
+	"context"
 	"time"
 
 	be_mocks "github.com/playnet-public/battleye/mocks"
@@ -8,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/playnet-public/gorcon/pkg/rcon"
-	context "github.com/seibert-media/golibs/log"
 )
 
 var _ = Describe("Connection", func() {
@@ -20,7 +20,7 @@ var _ = Describe("Connection", func() {
 
 	BeforeEach(func() {
 		proto = &be_mocks.Protocol{}
-		ctx = context.NewNop()
+		ctx = context.Background()
 		con = NewConnection(ctx)
 		con.Protocol = proto
 	})
@@ -28,7 +28,7 @@ var _ = Describe("Connection", func() {
 	Describe("Subscribe", func() {
 		BeforeEach(func() {
 			con = NewConnection(ctx)
-			ctx = context.NewNop()
+			ctx = context.Background()
 		})
 		It("does add subscription on Listen", func() {
 			l := len(con.subscriptions)

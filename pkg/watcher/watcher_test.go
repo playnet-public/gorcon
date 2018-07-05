@@ -1,6 +1,7 @@
 package watcher_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +13,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/playnet-public/gorcon/pkg/watcher"
-	context "github.com/seibert-media/golibs/log"
 )
 
 func TestWatcher(t *testing.T) {
@@ -28,7 +28,7 @@ var _ = Describe("Watcher", func() {
 	)
 
 	BeforeEach(func() {
-		ctx = context.NewNop()
+		ctx = context.Background()
 		w = watcher.NewWatcher(ctx, "")
 		p = &mocks.Process{}
 		w.Process = p

@@ -1,12 +1,12 @@
 package rcon_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/playnet-public/gorcon/pkg/mocks"
 	"github.com/playnet-public/gorcon/pkg/rcon"
-	context "github.com/seibert-media/golibs/log"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,7 +32,7 @@ var _ = Describe("Rcon", func() {
 		}
 		mockConnection = &mocks.RconConnection{}
 		mockClient.NewConnectionReturns(mockConnection)
-		ctx = context.NewNop()
+		ctx = context.Background()
 	})
 
 	Describe("Connect", func() {

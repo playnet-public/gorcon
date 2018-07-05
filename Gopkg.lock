@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/kolide/kit"
   packages = ["version"]
-  revision = "efbc10368270cec76483472fd8c02ecc54e15a0d"
+  revision = "45f7c9242522e5dd787e33bdec670fd8aec4ed60"
 
 [[projects]]
   name = "github.com/onsi/ginkgo"
@@ -82,7 +82,7 @@
   branch = "master"
   name = "github.com/seibert-media/golibs"
   packages = ["log"]
-  revision = "81caf2e014282540d68a8d5597d6cdfd491f8c22"
+  revision = "9e61895ec91ee9d3e9d1b060a127b8b0dbe02de7"
 
 [[projects]]
   name = "go.uber.org/atomic"
@@ -118,13 +118,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
+  revision = "ed29d75add3d7c4bf7ca65aac0c6df3d1420216f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
+  revision = "151529c776cdc58ddbe7963ba9af779f3577b419"
 
 [[projects]]
   name = "golang.org/x/text"

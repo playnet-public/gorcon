@@ -15,22 +15,13 @@ type Process struct {
 		arg1 io.Writer
 		arg2 io.Writer
 	}
-	StartStub        func() error
-	startMutex       sync.RWMutex
-	startArgsForCall []struct{}
-	startReturns     struct {
+	RunStub        func() error
+	runMutex       sync.RWMutex
+	runArgsForCall []struct{}
+	runReturns     struct {
 		result1 error
 	}
-	startReturnsOnCall map[int]struct {
-		result1 error
-	}
-	WaitStub        func() error
-	waitMutex       sync.RWMutex
-	waitArgsForCall []struct{}
-	waitReturns     struct {
-		result1 error
-	}
-	waitReturnsOnCall map[int]struct {
+	runReturnsOnCall map[int]struct {
 		result1 error
 	}
 	StopStub        func() error
@@ -71,82 +62,42 @@ func (fake *Process) SetOutArgsForCall(i int) (io.Writer, io.Writer) {
 	return fake.setOutArgsForCall[i].arg1, fake.setOutArgsForCall[i].arg2
 }
 
-func (fake *Process) Start() error {
-	fake.startMutex.Lock()
-	ret, specificReturn := fake.startReturnsOnCall[len(fake.startArgsForCall)]
-	fake.startArgsForCall = append(fake.startArgsForCall, struct{}{})
-	fake.recordInvocation("Start", []interface{}{})
-	fake.startMutex.Unlock()
-	if fake.StartStub != nil {
-		return fake.StartStub()
+func (fake *Process) Run() error {
+	fake.runMutex.Lock()
+	ret, specificReturn := fake.runReturnsOnCall[len(fake.runArgsForCall)]
+	fake.runArgsForCall = append(fake.runArgsForCall, struct{}{})
+	fake.recordInvocation("Run", []interface{}{})
+	fake.runMutex.Unlock()
+	if fake.RunStub != nil {
+		return fake.RunStub()
 	}
 	if specificReturn {
 		return ret.result1
 	}
-	return fake.startReturns.result1
+	return fake.runReturns.result1
 }
 
-func (fake *Process) StartCallCount() int {
-	fake.startMutex.RLock()
-	defer fake.startMutex.RUnlock()
-	return len(fake.startArgsForCall)
+func (fake *Process) RunCallCount() int {
+	fake.runMutex.RLock()
+	defer fake.runMutex.RUnlock()
+	return len(fake.runArgsForCall)
 }
 
-func (fake *Process) StartReturns(result1 error) {
-	fake.StartStub = nil
-	fake.startReturns = struct {
+func (fake *Process) RunReturns(result1 error) {
+	fake.RunStub = nil
+	fake.runReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *Process) StartReturnsOnCall(i int, result1 error) {
-	fake.StartStub = nil
-	if fake.startReturnsOnCall == nil {
-		fake.startReturnsOnCall = make(map[int]struct {
+func (fake *Process) RunReturnsOnCall(i int, result1 error) {
+	fake.RunStub = nil
+	if fake.runReturnsOnCall == nil {
+		fake.runReturnsOnCall = make(map[int]struct {
 			result1 error
 		})
 	}
-	fake.startReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *Process) Wait() error {
-	fake.waitMutex.Lock()
-	ret, specificReturn := fake.waitReturnsOnCall[len(fake.waitArgsForCall)]
-	fake.waitArgsForCall = append(fake.waitArgsForCall, struct{}{})
-	fake.recordInvocation("Wait", []interface{}{})
-	fake.waitMutex.Unlock()
-	if fake.WaitStub != nil {
-		return fake.WaitStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.waitReturns.result1
-}
-
-func (fake *Process) WaitCallCount() int {
-	fake.waitMutex.RLock()
-	defer fake.waitMutex.RUnlock()
-	return len(fake.waitArgsForCall)
-}
-
-func (fake *Process) WaitReturns(result1 error) {
-	fake.WaitStub = nil
-	fake.waitReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *Process) WaitReturnsOnCall(i int, result1 error) {
-	fake.WaitStub = nil
-	if fake.waitReturnsOnCall == nil {
-		fake.waitReturnsOnCall = make(map[int]struct {
-			result1 error
-		})
-	}
-	fake.waitReturnsOnCall[i] = struct {
+	fake.runReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
 }
@@ -196,10 +147,8 @@ func (fake *Process) Invocations() map[string][][]interface{} {
 	defer fake.invocationsMutex.RUnlock()
 	fake.setOutMutex.RLock()
 	defer fake.setOutMutex.RUnlock()
-	fake.startMutex.RLock()
-	defer fake.startMutex.RUnlock()
-	fake.waitMutex.RLock()
-	defer fake.waitMutex.RUnlock()
+	fake.runMutex.RLock()
+	defer fake.runMutex.RUnlock()
 	fake.stopMutex.RLock()
 	defer fake.stopMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

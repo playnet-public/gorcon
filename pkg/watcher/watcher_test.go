@@ -51,10 +51,10 @@ var _ = Describe("Watcher", func() {
 		It("does start process", func() {
 			w.Start(ctx)
 			time.Sleep(100 * time.Millisecond)
-			Expect(p.StartCallCount()).To(BeEquivalentTo(1))
+			Expect(p.RunCallCount()).To(BeEquivalentTo(1))
 		})
 		It("does end OutputHandlers on tomb dying", func() {
-			p.StartReturns(nil)
+			p.RunReturns(nil)
 			w.Start(ctx)
 			time.Sleep(100 * time.Millisecond)
 			w.TLock.RLock()

@@ -71,7 +71,7 @@ func (w *Watcher) Start(ctx context.Context) error {
 	})
 
 	w.Process.SetOut(stderr, stdout)
-	w.Tomb.Go(w.Process.Start)
+	w.Tomb.Go(w.Process.Run)
 	w.Tomb.Go(func() error {
 		w.TLock.RLock()
 		defer w.TLock.RUnlock()

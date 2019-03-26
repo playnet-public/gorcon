@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/playnet-public/gorcon/pkg/event"
+
 	"github.com/pkg/errors"
 )
 
@@ -27,7 +29,7 @@ type Connection interface {
 	// Write a command to the connection and return the resulting transmission
 	Write(context.Context, string) (Transmission, error)
 	// Listen for events on the connection.
-	Subscribe(context.Context, chan *Event)
+	Subscribe(context.Context, chan<- event.Event)
 }
 
 // Client is the interface for specific rcon implementations which provides connections or acts as connection pool
@@ -46,12 +48,35 @@ type Transmission interface {
 	Response() string
 }
 
-// Event describes an rcon event happening on the server and being received by the connection
+// Event describes a log event emitted by the process
+// TODO(kwiesmueller): rework this to a new Event interface used by all broker dependents
 type Event struct {
-	Timestamp time.Time
-	Type      byte
-	Payload   string
+	timestamp time.Time
+	kind      byte
+	payload   string
 }
+
+// NewEvent of kind with data
+func NewEvent(kind byte, data string) *Event {
+	return &Event{
+		timestamp: time.Now().UTC(),
+		kind:      kind,
+		payload:   data,
+	}
+}
+
+// Timestamp when the event occurred
+func (e Event) Timestamp() time.Time {
+	return e.timestamp
+}
+
+// Kind of the event
+func (e Event) Kind() string {
+	return string(e.kind)
+}
+
+// Data of the real event
+func (e Event) Data() string { return e.payload }
 
 // TypeEvent identifies default rcon events
 var TypeEvent byte = 0x00

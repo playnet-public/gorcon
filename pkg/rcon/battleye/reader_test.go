@@ -3,32 +3,35 @@ package battleye_test
 import (
 	"context"
 
+	be_proto "github.com/playnet-public/battleye/battleye"
+	be_mocks "github.com/playnet-public/battleye/mocks"
+	"github.com/playnet-public/gorcon/pkg/event"
 	"github.com/playnet-public/gorcon/pkg/mocks"
 	"github.com/playnet-public/gorcon/pkg/rcon"
+	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	be_proto "github.com/playnet-public/battleye/battleye"
-	be_mocks "github.com/playnet-public/battleye/mocks"
-	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
 )
 
 var _ = Describe("Reader", func() {
 	var (
+		ctx context.Context
+		c   *be.Client
 		con *be.Connection
 		pr  *be_mocks.Protocol
 		udp *mocks.UDPConnection
-		ctx context.Context
 	)
 
 	BeforeEach(func() {
-		con = be.NewConnection(context.Background())
+		ctx = context.Background()
+		c = be.New(ctx)
+		con = c.NewConnection(ctx).(*be.Connection)
 		pr = &be_mocks.Protocol{}
 		udp = &mocks.UDPConnection{}
 		con.Protocol = pr
 		con.UDP = udp
-		ctx = context.Background()
 	})
 
 	Describe("HandlePacket", func() {
@@ -200,18 +203,20 @@ var _ = Describe("Reader", func() {
 			Expect(con.HandleServerMessage(ctx, nil)).NotTo(BeNil())
 		})
 		It("does send event to channel", func() {
-			c := make(chan *rcon.Event)
+			c := make(chan event.Event)
+			go con.Broker.Run(ctx)
 			con.Subscribe(ctx, c)
 			con.HandleServerMessage(ctx, []byte("test"))
 			event := <-c
-			Expect(event.Payload).NotTo(BeEquivalentTo(""))
+			Expect(event.Data()).NotTo(BeEquivalentTo(""))
 		})
 		It("does set correct type when handling chat event", func() {
-			c := make(chan *rcon.Event)
+			c := make(chan event.Event)
+			go con.Broker.Run(ctx)
 			con.Subscribe(ctx, c)
 			con.HandleServerMessage(ctx, []byte("(Group) Test"))
 			event := <-c
-			Expect(event.Type).To(BeEquivalentTo(rcon.TypeChat))
+			Expect(event.Kind()).To(BeEquivalentTo(string(rcon.TypeChat)))
 		})
 		It("does return error if UDP.Write fails", func() {
 			udp.WriteReturns(0, errors.New("test"))

@@ -3,18 +3,23 @@ package battleye_test
 import (
 	"context"
 
+	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	be "github.com/playnet-public/gorcon/pkg/rcon/battleye"
 )
 
 var _ = Describe("Connection Helpers", func() {
 	var (
+		ctx context.Context
+		c   *be.Client
 		con *be.Connection
 	)
 
 	BeforeEach(func() {
-		con = be.NewConnection(context.Background())
+		ctx = context.Background()
+		c = be.New(ctx)
+		con = c.NewConnection(ctx).(*be.Connection)
 	})
 
 	Describe("Sequence", func() {

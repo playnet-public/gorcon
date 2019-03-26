@@ -7,23 +7,34 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/playnet-public/gorcon/pkg/event"
+	"github.com/playnet-public/gorcon/pkg/rcon"
 
 	"github.com/pkg/errors"
-	"github.com/seibert-media/golibs/log"
-	tomb "gopkg.in/tomb.v2"
-
 	be_proto "github.com/playnet-public/battleye/battleye"
-	"github.com/playnet-public/gorcon/pkg/rcon"
+	"github.com/seibert-media/golibs/log"
+	"go.uber.org/zap"
+	tomb "gopkg.in/tomb.v2"
 )
 
 // Client is a BattlEye specific implementation of rcon.Client to create new BattlEye rcon connections
 type Client struct {
+	*event.Broker
+	events chan event.Event
+}
+
+// New battleye client
+func New(ctx context.Context) *Client {
+	e := make(chan event.Event)
+	return &Client{
+		Broker: event.NewBroker(ctx, e),
+		events: e,
+	}
 }
 
 // NewConnection from the current client's configuration
 func (c *Client) NewConnection(ctx context.Context) rcon.Connection {
-	return NewConnection(ctx)
+	return NewConnection(ctx, c.Broker, c.events)
 }
 
 // Connection is a BattlEye specific implementation of rcon.Connection offering all required rcon generics
@@ -42,17 +53,18 @@ type Connection struct {
 	transmissions       map[be_proto.Sequence]*Transmission
 	transmissionsMutext sync.RWMutex
 
-	subscriptions      []chan *rcon.Event
-	subscriptionsMutex sync.RWMutex
+	*event.Broker
+	events chan event.Event
 
 	Tomb *tomb.Tomb
 }
 
 // NewConnection from the passed in configuration
-func NewConnection(ctx context.Context) *Connection {
+func NewConnection(ctx context.Context, broker *event.Broker, events chan event.Event) *Connection {
 	c := &Connection{
-		Protocol:      be_proto.New(),
-		subscriptions: []chan *rcon.Event{},
+		Protocol: be_proto.New(),
+		Broker:   broker,
+		events:   events,
 	}
 	atomic.StoreUint32(&c.seq, 0)
 	atomic.StoreInt64(&c.keepAliveCount, 0)
@@ -190,23 +202,4 @@ func (c *Connection) Write(ctx context.Context, cmd string) (rcon.Transmission, 
 		return nil, errors.Wrap(err, "writing udp failed")
 	}
 	return trm, nil
-}
-
-// Subscribe for events on the connection until the context ends
-func (c *Connection) Subscribe(ctx context.Context, to chan *rcon.Event) {
-	c.subscriptionsMutex.Lock()
-	defer c.subscriptionsMutex.Unlock()
-	c.subscriptions = append(c.subscriptions, to)
-	go func() {
-		<-ctx.Done()
-		c.subscriptionsMutex.Lock()
-		defer c.subscriptionsMutex.Unlock()
-		for i, s := range c.subscriptions {
-			if s == to {
-				c.subscriptions[i] = c.subscriptions[len(c.subscriptions)-1]
-				c.subscriptions[len(c.subscriptions)-1] = nil
-				c.subscriptions = c.subscriptions[:len(c.subscriptions)-1]
-			}
-		}
-	}()
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/playnet-public/gorcon/pkg/event"
 	"github.com/playnet-public/gorcon/pkg/rcon"
 )
 
@@ -45,11 +46,11 @@ type RconConnection struct {
 		result1 rcon.Transmission
 		result2 error
 	}
-	SubscribeStub        func(context.Context, chan *rcon.Event)
+	SubscribeStub        func(context.Context, chan<- event.Event)
 	subscribeMutex       sync.RWMutex
 	subscribeArgsForCall []struct {
 		arg1 context.Context
-		arg2 chan *rcon.Event
+		arg2 chan<- event.Event
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -203,11 +204,11 @@ func (fake *RconConnection) WriteReturnsOnCall(i int, result1 rcon.Transmission,
 	}{result1, result2}
 }
 
-func (fake *RconConnection) Subscribe(arg1 context.Context, arg2 chan *rcon.Event) {
+func (fake *RconConnection) Subscribe(arg1 context.Context, arg2 chan<- event.Event) {
 	fake.subscribeMutex.Lock()
 	fake.subscribeArgsForCall = append(fake.subscribeArgsForCall, struct {
 		arg1 context.Context
-		arg2 chan *rcon.Event
+		arg2 chan<- event.Event
 	}{arg1, arg2})
 	fake.recordInvocation("Subscribe", []interface{}{arg1, arg2})
 	fake.subscribeMutex.Unlock()
@@ -222,7 +223,7 @@ func (fake *RconConnection) SubscribeCallCount() int {
 	return len(fake.subscribeArgsForCall)
 }
 
-func (fake *RconConnection) SubscribeArgsForCall(i int) (context.Context, chan *rcon.Event) {
+func (fake *RconConnection) SubscribeArgsForCall(i int) (context.Context, chan<- event.Event) {
 	fake.subscribeMutex.RLock()
 	defer fake.subscribeMutex.RUnlock()
 	return fake.subscribeArgsForCall[i].arg1, fake.subscribeArgsForCall[i].arg2

@@ -7,9 +7,10 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/pkg/errors"
 	be_proto "github.com/playnet-public/battleye/battleye"
 	"github.com/playnet-public/gorcon/pkg/rcon"
+
+	"github.com/pkg/errors"
 	"github.com/seibert-media/golibs/log"
 )
 
@@ -118,22 +119,14 @@ func (c *Connection) HandleServerMessage(ctx context.Context, p be_proto.Packet)
 		}
 	}
 
-	event := &rcon.Event{
-		Timestamp: time.Now(),
-		Type:      t,
-		Payload:   string(p),
-	}
+	event := rcon.NewEvent(t, string(p))
 
 	_, err = c.UDP.Write(c.Protocol.BuildMsgAckPacket(s))
 	if err != nil {
 		return errors.Wrap(err, "handling server message")
 	}
 
-	c.subscriptionsMutex.RLock()
-	defer c.subscriptionsMutex.RUnlock()
-	for _, l := range c.subscriptions {
-		go func(l chan *rcon.Event) { l <- event }(l)
-	}
+	go func(e *rcon.Event) { c.events <- e }(event)
 
 	return nil
 }

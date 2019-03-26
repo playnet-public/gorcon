@@ -5,21 +5,22 @@ import (
 	"context"
 	"errors"
 	"io"
-	"sync"
 	"time"
 
-	"gopkg.in/tomb.v2"
+	"github.com/playnet-public/gorcon/pkg/event"
+
+	"github.com/seibert-media/golibs/log"
+	"go.uber.org/zap"
 )
 
 // Watcher is responsible for starting and keeping a process alive
 type Watcher struct {
-	Process Process
+	Process   Process
+	closeFunc func()
+	close     chan error
 
-	Tomb  *tomb.Tomb
-	TLock sync.RWMutex
-
-	subscriptions      []chan *Event
-	subscriptionsMutex sync.RWMutex
+	*event.Broker
+	events chan event.Event
 
 	StopTimeout time.Duration
 }
@@ -30,123 +31,114 @@ var ErrStopEvent = errors.New("received external stop event")
 // NewWatcher responsible for starting and keeping a process alive, restarting if necessary
 func NewWatcher(ctx context.Context, path string, args ...string) *Watcher {
 	w := &Watcher{
-		Process:       nil,
-		subscriptions: []chan *Event{},
-		StopTimeout:   5 * time.Second,
+		Process:     nil,
+		close:       make(chan error),
+		events:      make(chan event.Event),
+		StopTimeout: 5 * time.Second,
 	}
-	w.TLock.Lock()
-	defer w.TLock.Unlock()
-	w.Tomb, _ = tomb.WithContext(ctx)
+
 	return w
 }
 
 // Start the underlying process and handle events
 func (w *Watcher) Start(ctx context.Context) error {
-	w.TLock.Lock()
-	if !w.Tomb.Alive() {
-		w.Tomb, _ = tomb.WithContext(ctx)
-	}
-	w.TLock.Unlock()
+	ctx, w.closeFunc = context.WithCancel(ctx)
+
+	go func() {
+		log.From(ctx).Debug("waiting for ctx to close", zap.String("span", "Watcher.Start"))
+		<-ctx.Done()
+		log.From(ctx).Debug("handling ctx close", zap.String("span", "Watcher.Start"))
+		go func() { w.close <- ctx.Err() }()
+	}()
+
 	rerr, stderr := io.Pipe()
 	rout, stdout := io.Pipe()
 
-	w.TLock.RLock()
-	defer w.TLock.RUnlock()
+	go w.OutputHandler(ctx, rerr, "StdErr")
+	go func() {
+		log.From(ctx).Debug("waiting for ctx to close", zap.String("span", "OutputHandler.StdErr"))
+		<-ctx.Done()
+		log.From(ctx).Debug("handling ctx close", zap.String("span", "OutputHandler.StdErr"))
+		stderr.CloseWithError(ctx.Err())
+	}()
+	go w.OutputHandler(ctx, rout, "StdOut")
+	go func() {
+		log.From(ctx).Debug("waiting for ctx to close", zap.String("span", "OutputHandler.StdOut"))
+		<-ctx.Done()
+		log.From(ctx).Debug("handling ctx close", zap.String("span", "OutputHandler.StdOut"))
+		stdout.CloseWithError(ctx.Err())
+	}()
 
-	w.Tomb.Go(w.OutputHandler(rerr, "StdErr"))
-	w.Tomb.Go(func() error {
-		w.TLock.RLock()
-		defer w.TLock.RUnlock()
-		<-w.Tomb.Dying()
-		stderr.CloseWithError(w.Tomb.Err())
-		return nil
-	})
-	w.Tomb.Go(w.OutputHandler(rout, "StdOut"))
-	w.Tomb.Go(func() error {
-		w.TLock.RLock()
-		defer w.TLock.RUnlock()
-		<-w.Tomb.Dying()
-		stdout.CloseWithError(w.Tomb.Err())
-		return nil
-	})
+	go func() {
+		w.Broker = event.NewBroker(ctx, w.events)
+		log.From(ctx).Debug("running broker")
+		if err := w.Broker.Run(ctx); err != nil {
+			log.From(ctx).Error("running broker", zap.Error(err))
+			w.close <- err
+		}
+	}()
 
 	w.Process.SetOut(stderr, stdout)
-	w.Tomb.Go(w.Process.Run)
-	w.Tomb.Go(func() error {
-		w.TLock.RLock()
-		defer w.TLock.RUnlock()
-		<-w.Tomb.Dying()
-		return w.Process.Stop()
-	})
+	go func() {
+		log.From(ctx).Debug("waiting for ctx to close", zap.String("span", "Process.Stop"))
+		<-ctx.Done()
+		log.From(ctx).Debug("stopping process")
+		if err := w.Process.Stop(); err != nil {
+			log.From(ctx).Error("stopping process", zap.Error(err))
+		}
+	}()
 
-	return nil
+	log.From(ctx).Debug("running process")
+	if err := w.Process.Run(); err != nil {
+		log.From(ctx).Error("running process", zap.Error(err))
+		w.close <- err
+		return err
+	}
+
+	return ctx.Err()
 }
 
 // Stop the underlying process and all event handling routines
 func (w *Watcher) Stop(ctx context.Context) error {
-	w.TLock.RLock()
-	defer w.TLock.RUnlock()
-	w.Tomb.Kill(ErrStopEvent)
-	select {
-	case <-w.Tomb.Dead():
-		return nil
-	case <-time.After(w.StopTimeout):
-		return errors.New("timeout stopping watcher")
-	}
+	return w.Process.Stop()
 }
 
 // KeepAlive starts a go routine responsible for reviving the process once it dies
 func (w *Watcher) KeepAlive(ctx context.Context) {
 	go func() {
-		w.TLock.RLock()
-		defer w.TLock.RUnlock()
-		<-w.Tomb.Dead()
-		if w.Tomb.Err() != ErrStopEvent {
-			go w.Start(ctx)
+		if err := <-w.close; err != ErrStopEvent {
+			log.From(ctx).Info("handling close event", zap.Error(err))
 			w.KeepAlive(ctx)
-		}
-	}()
-}
-
-// Subscribe for events on the process until the context ends
-func (w *Watcher) Subscribe(ctx context.Context, to chan *Event) {
-	w.subscriptionsMutex.Lock()
-	defer w.subscriptionsMutex.Unlock()
-	w.subscriptions = append(w.subscriptions, to)
-	go func() {
-		<-ctx.Done()
-		w.subscriptionsMutex.Lock()
-		defer w.subscriptionsMutex.Unlock()
-		for i, s := range w.subscriptions {
-			if s == to {
-				w.subscriptions[i] = w.subscriptions[len(w.subscriptions)-1]
-				w.subscriptions[len(w.subscriptions)-1] = nil
-				w.subscriptions = w.subscriptions[:len(w.subscriptions)-1]
-			}
+			go func() {
+				log.From(ctx).Debug("running process")
+				if err := w.Process.Run(); err != nil {
+					log.From(ctx).Error("running process", zap.Error(err))
+					w.close <- err
+				}
+			}()
 		}
 	}()
 }
 
 // OutputHandler returns a function reading from io.Reader and creating events
-func (w *Watcher) OutputHandler(r io.Reader, eventType string) func() error {
+func (w *Watcher) OutputHandler(ctx context.Context, r io.Reader, eventType string) func() error {
 	return func() error {
 		scn := bufio.NewScanner(r)
-		for scn.Scan() {
-			w.publishEvent(&Event{
-				Timestamp: time.Now(),
-				Type:      eventType,
-				Payload:   scn.Text(),
-			})
-			continue
+		for {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				if scn.Scan() {
+					w.events <- &Event{
+						timestamp: time.Now(),
+						kind:      eventType,
+						payload:   scn.Text(),
+					}
+					continue
+				}
+				return errors.New("end of stream")
+			}
 		}
-		return errors.New("end of stream")
-	}
-}
-
-func (w *Watcher) publishEvent(e *Event) {
-	w.subscriptionsMutex.RLock()
-	defer w.subscriptionsMutex.RUnlock()
-	for _, l := range w.subscriptions {
-		go func(l chan *Event) { l <- e }(l)
 	}
 }
